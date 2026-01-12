@@ -12,9 +12,4 @@ export default defineConfig({
         plugins: ['babel-plugin-react-compiler'],
       }
     })],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './vite-setup.ts',
-  }
 })
