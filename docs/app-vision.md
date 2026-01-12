@@ -13,12 +13,14 @@ A platform where Northwestern University students can request for help or offer 
 # Key features
 
 Simple mobile-friendly one-screen design with the app name at the top, and below it:
+- Northwestern University themed design
 - Log in or sign up page using Northwestern University email and password
 - Sign up page allows users to input name, year, and major  
 - Initial dashboard screen similar to Reddit with a scrollable list of current requests
 - Plus icon at the top of the page to create a new request which prompts a request form which includes title and description
-- On the dashboard, users can click on a request and click an offer help button. It will send a notification to the creator of the request, informing them that someone offered help. 
-- Bell icon also at the top of the page which directs users to the notification center. Users can see if someone has offered help on their request and display ttheir user profile. The requestor can click the accept button which will display the offering user's Northwestern email address and prompt them to contact them to coordinate meet-up.
+- On the dashboard, users can click on a request and click an offer help button. It will send a notification to the creator of the request, informing them that someone offered help. - If the user clicks on a request after offering help, it should display that they already offered help to prevent them from re-offering.
+- Bell icon also at the top of the page which directs users to the notification center. Users can see if someone has offered help on their request. It should show which request is being offered help and the offering user's name, year, and major. The requestor can click the accept button which will display the offering user's Northwestern email address and prompt them to contact them to coordinate meet-up. 
+- The requestor can also decline the offer. The offer will then be removed from their notification center. 
 
 # Example scenario
 
