@@ -1,5 +1,5 @@
 import type { Request, Offer, Notification } from '../types/index';
-import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from "../lib/firebase";
 
 
@@ -219,7 +219,10 @@ export const createNotification = async (
   helperMajor: string,
   status: 'pending' | 'accepted'
 ): Promise<Notification> => {
-  const notification: Omit<Notification, 'notificationID'> = {
+  // Derive notifications from offers instead of storing a notifications collection.
+  const notificationID = offerID;
+  const notification: Notification = {
+    notificationID,
     userID,
     offerID,
     requestID,
@@ -230,36 +233,70 @@ export const createNotification = async (
     helperMajor,
     status,
     createdAt: Date.now(),
-    read: false,
+    read: notifications.get(notificationID)?.read ?? false,
   };
-  const docRef = await addDoc(collection(db, 'notifications'), notification);
-  const notificationID = docRef.id;
-  const fullNotification: Notification = { ...notification, notificationID };
-  notifications.set(notificationID, fullNotification);
-  return fullNotification;
+  notifications.set(notificationID, notification);
+  return notification;
 };
 
 export const getNotification = async (notificationID: string): Promise<Notification | undefined> => {
-  const docRef = doc(db, 'notifications', notificationID);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    return { notificationID, ...docSnap.data() } as Notification;
-  }
-  return notifications.get(notificationID);
+  const cached = notifications.get(notificationID);
+  if (cached) return cached;
+
+  const offer = await getOffer(notificationID);
+  if (!offer) return undefined;
+
+  const request = await getRequest(offer.requestID);
+  if (!request) return undefined;
+
+  const derived: Notification = {
+    notificationID,
+    userID: request.creatorID,
+    offerID: offer.offerID,
+    requestID: offer.requestID,
+    helperID: offer.helperID,
+    helperName: offer.helperName,
+    helperEmail: offer.helperEmail,
+    helperYear: '',
+    helperMajor: '',
+    status: offer.status,
+    createdAt: offer.createdAt,
+    read: false,
+  };
+  notifications.set(notificationID, derived);
+  return derived;
 };
 
 export const getNotificationsByUser = async (userID: string): Promise<Notification[]> => {
-  const q = query(
-    collection(db, 'notifications'),
-    where('userID', '==', userID),
-    orderBy('createdAt', 'desc')
-  );
-  const querySnapshot = await getDocs(q);
+  // Build notifications from offers associated to the user's requests.
+  const userRequests = await getRequestsByCreator(userID);
   const notificationsList: Notification[] = [];
-  querySnapshot.forEach((doc) => {
-    notificationsList.push({ notificationID: doc.id, ...doc.data() } as Notification);
-  });
-  return notificationsList;
+
+  for (const request of userRequests) {
+    const requestOffers = await getOffersByRequest(request.requestID);
+    requestOffers.forEach((offer) => {
+      const notificationID = offer.offerID;
+      const cached = notifications.get(notificationID);
+      const notification: Notification = {
+        notificationID,
+        userID,
+        offerID: offer.offerID,
+        requestID: offer.requestID,
+        helperID: offer.helperID,
+        helperName: offer.helperName,
+        helperEmail: offer.helperEmail,
+        helperYear: '',
+        helperMajor: '',
+        status: offer.status,
+        createdAt: offer.createdAt,
+        read: cached?.read ?? false,
+      };
+      notifications.set(notificationID, notification);
+      notificationsList.push(notification);
+    });
+  }
+
+  return notificationsList.sort((a, b) => b.createdAt - a.createdAt);
 };
 
 export const getUnreadNotifications = async (userID: string): Promise<Notification[]> => {
@@ -268,32 +305,29 @@ export const getUnreadNotifications = async (userID: string): Promise<Notificati
 };
 
 export const markNotificationAsRead = async (notificationID: string): Promise<Notification | undefined> => {
-  const notification = notifications.get(notificationID);
+  const notification = await getNotification(notificationID);
   if (notification) {
-    notification.read = true;
-    notifications.set(notificationID, notification);
-    const firestore = getFirestore();
-    await updateDoc(doc(collection(firestore, 'notifications'), notificationID), { read: true });
+    const updated: Notification = { ...notification, read: true };
+    notifications.set(notificationID, updated);
+    return updated;
   }
-  return notification;
+  return undefined;
 };
 
 export const updateNotificationStatus = async (
   notificationID: string,
   status: 'pending' | 'accepted'
 ): Promise<Notification | undefined> => {
-  const notification = notifications.get(notificationID);
+  const notification = await getNotification(notificationID);
   if (notification) {
-    notification.status = status;
-    notifications.set(notificationID, notification);
-    const firestore = getFirestore();
-    await updateDoc(doc(collection(firestore, 'notifications'), notificationID), { status });
+    await updateOfferStatus(notification.offerID, status);
+    const updated: Notification = { ...notification, status };
+    notifications.set(notificationID, updated);
+    return updated;
   }
-  return notification;
+  return undefined;
 };
 
 export const deleteNotification = async (notificationID: string): Promise<void> => {
   notifications.delete(notificationID);
-  const firestore = getFirestore();
-  await deleteDoc(doc(collection(firestore, 'notifications'), notificationID));
 };
