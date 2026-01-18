@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../utilities/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { getAllRequests, getNotificationsByUser, createOffer, createNotification, getOfferByRequestAndHelper } from '../utilities/database';
 import type { Request, Notification } from '../types/index';
 import RequestForm from './RequestForm';
@@ -7,6 +8,15 @@ import NotificationCenter from './NotificationCenter';
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/');
+    } else if (!currentUser.year || !currentUser.major) {
+      navigate('/create-profile');
+    }
+  }, [currentUser, navigate]);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [requests, setRequests] = useState<Request[]>(getAllRequests());
@@ -30,14 +40,14 @@ export default function Dashboard() {
   }, [currentUser]);
 
   const handleOfferHelp = (request: Request) => {
-    if (!currentUser) return;
+    if (!currentUser || !currentUser.email || !currentUser.displayName || !currentUser.year || !currentUser.major) return;
 
     try {
       const offer = createOffer(
         request.requestID,
         currentUser.uid,
         currentUser.email,
-        currentUser.name
+        currentUser.displayName
       );
 
       createNotification(
@@ -45,7 +55,7 @@ export default function Dashboard() {
         offer.offerID,
         request.requestID,
         currentUser.uid,
-        currentUser.name,
+        currentUser.displayName,
         currentUser.email,
         currentUser.year,
         currentUser.major,

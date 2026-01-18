@@ -1,5 +1,5 @@
 import type { Request, Offer, Notification } from '../types/index';
-import { getFirestore, doc, getDoc, collection } from "firebase/firestore"; // Ensure you import necessary functions
+import { getFirestore, doc, getDoc, collection, setDoc } from "firebase/firestore"; // Ensure you import necessary functions
 import {db} from "../lib/firebase"
 
 
@@ -65,6 +65,31 @@ export async function checkUserProfile(uid: string): Promise<boolean> {
   const firestore = getFirestore(); // Get Firestore instance
   const userProfile = await getDoc(doc(collection(firestore, 'profiles'), uid)); // Use getDoc and doc to fetch the document
   return userProfile.exists();
+}
+
+export async function getUserProfile(uid: string): Promise<{ name: string; year: string; major: string; email: string } | null> {
+  const firestore = getFirestore();
+  const userProfile = await getDoc(doc(collection(firestore, 'profiles'), uid));
+  if (userProfile.exists()) {
+    const data = userProfile.data();
+    return {
+      name: data.name || '',
+      year: data.year || '',
+      major: data.major || '',
+      email: data.email || '',
+    };
+  }
+  return null;
+}
+
+export async function createProfile(uid: string, name: string, year: string, major: string, email: string): Promise<void> {
+  const firestore = getFirestore();
+  await setDoc(doc(collection(firestore, 'profiles'), uid), {
+    name,
+    year,
+    major,
+    email,
+  });
 }
 // ============ Offers ============
 

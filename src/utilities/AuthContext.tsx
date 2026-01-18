@@ -2,12 +2,14 @@ import { createContext, useContext, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { auth } from '../lib/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getUserProfile } from './database';
 
 interface AuthContextType {
   currentUser: User | null;
-  login: () => Promise<void>;
+  login: () => Promise<User | null>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  updateProfile: (profile: { name: string; year: string; major: string }) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +19,9 @@ interface User {
   email?: string;
   displayName?: string;
   photoURL?: string;
+  name?: string;
+  year?: string;
+  major?: string;
 }
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
@@ -30,17 +35,35 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       const result = await signInWithPopup(auth, googleProvider);
 
       // Set the current user with Firebase user data
-      setCurrentUser({
+      const firebaseUser = {
         uid: result.user.uid,
         email: result.user.email || '',
         displayName: result.user.displayName || '',
         photoURL: result.user.photoURL || undefined,
-      });
+      };
+
+      // Fetch profile if exists
+      const profile = await getUserProfile(result.user.uid);
+      const currentUser = {
+        ...firebaseUser,
+        name: profile?.name || firebaseUser.displayName,
+        year: profile?.year,
+        major: profile?.major,
+      };
+
+      setCurrentUser(currentUser);
+      return currentUser;
     } catch (err) {
       console.error('error signing in');
-
+      return null;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const updateProfile = (profile: { name: string; year: string; major: string }) => {
+    if (currentUser) {
+      setCurrentUser({ ...currentUser, ...profile });
     }
   };
 
@@ -54,6 +77,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     login,
     logout,
     isLoading,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
