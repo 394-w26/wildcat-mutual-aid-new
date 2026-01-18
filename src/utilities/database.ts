@@ -1,6 +1,6 @@
 import type { Request, Offer, Notification } from '../types/index';
-import { getFirestore, doc, getDoc, collection, setDoc, addDoc } from "firebase/firestore"; // Ensure you import necessary functions
-import {db} from "../lib/firebase"
+import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 
 // Simple in-memory storage for local development
@@ -41,18 +41,38 @@ export const createRequest = async (
   };
 };
 
-export const getRequest = (requestID: string): Request | undefined => {
-  return requests.get(requestID);
+export const getRequest = async (requestID: string): Promise<Request | undefined> => {
+  const docRef = doc(db, 'requests', requestID);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return {
+      ...docSnap.data(),
+      requestID: docSnap.id,
+    } as Request;
+  }
+  return undefined;
 };
 
-export const getAllRequests = (): Request[] => {
-  return Array.from(requests.values()).sort((a, b) => b.createdAt - a.createdAt);
+export const getAllRequests = async (): Promise<Request[]> => {
+  const q = query(collection(db, 'requests'), orderBy('createdAt', 'desc'));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    ...doc.data(),
+    requestID: doc.id,
+  } as Request));
 };
 
-export const getRequestsByCreator = (creatorID: string): Request[] => {
-  return Array.from(requests.values())
-    .filter((r) => r.creatorID === creatorID)
-    .sort((a, b) => b.createdAt - a.createdAt);
+export const getRequestsByCreator = async (creatorID: string): Promise<Request[]> => {
+  const q = query(
+    collection(db, 'requests'),
+    where('creatorID', '==', creatorID),
+    orderBy('createdAt', 'desc')
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    ...doc.data(),
+    requestID: doc.id,
+  } as Request));
 };
 
 export const updateRequestStatus = (requestID: string, status: 'open' | 'accepted' | 'closed'): Request | undefined => {

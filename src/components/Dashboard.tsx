@@ -1,7 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../utilities/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getAllRequests, getNotificationsByUser, createOffer, createNotification, getOfferByRequestAndHelper } from '../utilities/database';
+import {
+  getAllRequests,
+  getNotificationsByUser,
+  createOffer,
+  createNotification,
+  getOfferByRequestAndHelper,
+} from '../utilities/database';
 import type { Request, Notification } from '../types/index';
 import RequestForm from './RequestForm';
 import NotificationCenter from './NotificationCenter';
@@ -19,7 +25,7 @@ export default function Dashboard() {
   }, [currentUser, navigate]);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [requests, setRequests] = useState<Request[]>(getAllRequests());
+  const [requests, setRequests] = useState<Request[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>(
     currentUser ? getNotificationsByUser(currentUser.uid) : []
   );
@@ -28,10 +34,23 @@ export default function Dashboard() {
   const [success, setSuccess] = useState('');
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const handleRefreshRequests = useCallback(async () => {
+    const getAll = async () => {
+      try {
+        const result = await getAllRequests();
+        setRequests(result);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  const handleRefreshRequests = useCallback(() => {
-    setRequests(getAllRequests());
+    getAll();
   }, []);
+
+  useEffect(() => {
+    handleRefreshRequests();
+  }, []);
+
 
   const handleRefreshNotifications = useCallback(() => {
     if (currentUser) {
@@ -40,7 +59,14 @@ export default function Dashboard() {
   }, [currentUser]);
 
   const handleOfferHelp = (request: Request) => {
-    if (!currentUser || !currentUser.email || !currentUser.displayName || !currentUser.year || !currentUser.major) return;
+    if (
+      !currentUser ||
+      !currentUser.email ||
+      !currentUser.displayName ||
+      !currentUser.year ||
+      !currentUser.major
+    )
+      return;
 
     try {
       const offer = createOffer(
@@ -76,7 +102,9 @@ export default function Dashboard() {
       <header className="bg-gradient-to-r from-purple-900 to-purple-700 shadow-lg">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-white">Wildcat Mutual Aid</h1>
+            <h1 className="text-2xl font-bold text-white">
+              Wildcat Mutual Aid
+            </h1>
             <p className="text-xs text-purple-200">Northwestern University</p>
           </div>
           <div className="flex gap-4 items-center">
@@ -93,8 +121,18 @@ export default function Dashboard() {
                 className="bg-white text-purple-900 p-2 rounded-full hover:bg-purple-100 transition-colors"
                 title="Notifications"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
                 </svg>
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -158,8 +196,12 @@ export default function Dashboard() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">{request.title}</h3>
-                      <p className="text-gray-600 mt-2">{request.description}</p>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {request.title}
+                      </h3>
+                      <p className="text-gray-600 mt-2">
+                        {request.description}
+                      </p>
                       <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
                         <span>By {request.creatorName}</span>
                         <span>
@@ -198,22 +240,30 @@ export default function Dashboard() {
               ← Back to requests
             </button>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">{selectedRequest.title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              {selectedRequest.title}
+            </h2>
             <p className="text-gray-600 mb-6">{selectedRequest.description}</p>
 
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
-              <h3 className="font-semibold text-gray-900 mb-2">Request details</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Request details
+              </h3>
               <p className="text-sm text-gray-600">
-                <span className="font-semibold">Posted by:</span> {selectedRequest.creatorName}
+                <span className="font-semibold">Posted by:</span>{' '}
+                {selectedRequest.creatorName}
               </p>
               <p className="text-sm text-gray-600">
-                <span className="font-semibold">Year:</span> {selectedRequest.creatorYear}
+                <span className="font-semibold">Year:</span>{' '}
+                {selectedRequest.creatorYear}
               </p>
               <p className="text-sm text-gray-600">
-                <span className="font-semibold">Major:</span> {selectedRequest.creatorMajor}
+                <span className="font-semibold">Major:</span>{' '}
+                {selectedRequest.creatorMajor}
               </p>
               <p className="text-sm text-gray-600">
-                <span className="font-semibold">Email:</span> {selectedRequest.creatorEmail}
+                <span className="font-semibold">Email:</span>{' '}
+                {selectedRequest.creatorEmail}
               </p>
               <p className="text-sm text-gray-600">
                 <span className="font-semibold">Status:</span>{' '}
@@ -240,11 +290,19 @@ export default function Dashboard() {
             </div>
 
             {currentUser?.uid !== selectedRequest.creatorID &&
-              selectedRequest.status === 'open' && (() => {
-                const alreadyOffered = currentUser ? getOfferByRequestAndHelper(selectedRequest.requestID, currentUser.uid) : null;
+              selectedRequest.status === 'open' &&
+              (() => {
+                const alreadyOffered = currentUser
+                  ? getOfferByRequestAndHelper(
+                      selectedRequest.requestID,
+                      currentUser.uid
+                    )
+                  : null;
                 return alreadyOffered ? (
                   <div className="bg-blue-100 border border-blue-400 text-blue-700 p-4 rounded-lg">
-                    <p className="font-semibold">✓ You already offered help on this request</p>
+                    <p className="font-semibold">
+                      ✓ You already offered help on this request
+                    </p>
                   </div>
                 ) : (
                   <button
