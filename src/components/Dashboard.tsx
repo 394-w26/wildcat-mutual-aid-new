@@ -107,7 +107,7 @@ export default function Dashboard() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Welcome, {currentUser?.name}!
+            Welcome, {currentUser?.displayName}!
           </h2>
           <p className="text-gray-600">
             {currentUser?.year} • {currentUser?.major}

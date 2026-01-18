@@ -1,62 +1,57 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { PropsWithChildren } from 'react';
-import type { User } from '../types/index';
+import { auth } from '../lib/firebase';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 interface AuthContextType {
   currentUser: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, confirmPassword: string, name: string, year: string, major: string) => Promise<void>;
-  logout: () => void;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+interface User {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+}
+
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
+  const login = async () => {
     try {
-      const { login: authLogin } = await import('../utilities/auth');
-      const user = await authLogin({ email, password });
-      setCurrentUser(user);
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      setIsLoading(true);
+      const googleProvider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, googleProvider);
 
-  const signup = useCallback(async (email: string, password: string, confirmPassword: string, name: string, year: string, major: string) => {
-    setIsLoading(true);
-    try {
-      const { signup: authSignup } = await import('../utilities/auth');
-      const user = await authSignup({
-        email,
-        password,
-        confirmPassword,
-        name,
-        year,
-        major,
+      // Set the current user with Firebase user data
+      setCurrentUser({
+        uid: result.user.uid,
+        email: result.user.email || '',
+        displayName: result.user.displayName || '',
+        photoURL: result.user.photoURL || undefined,
       });
-      setCurrentUser(user);
-    } catch (error) {
-      throw error;
+    } catch (err) {
+      console.error('error signing in');
+
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
-  const logout = useCallback(() => {
+  const logout = async () => {
+    await signOut(auth);
     setCurrentUser(null);
-  }, []);
+  };
 
   const value: AuthContextType = {
     currentUser,
     login,
-    signup,
     logout,
     isLoading,
   };
