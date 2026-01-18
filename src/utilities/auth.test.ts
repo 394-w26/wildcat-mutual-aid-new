@@ -173,7 +173,7 @@ describe('Database Functions', () => {
   it('should create and retrieve requests', async () => {
     const { createRequest, getRequest, getAllRequests } = await import('../utilities/database');
 
-    const request = createRequest(
+    const request = await createRequest(
       'Need a ride',
       'I need a ride to HMart',
       'user_123',

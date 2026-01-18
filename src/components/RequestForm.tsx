@@ -24,7 +24,8 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
       const data: RequestFormData = { title, description };
       const validated = requestFormSchema.parse(data);
 
-      if (!currentUser) {
+      if (!currentUser || !currentUser.email || !currentUser.displayName || !currentUser.year || !currentUser.major
+      ) {
         throw new Error('User not authenticated');
       }
 
@@ -33,7 +34,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
         validated.description,
         currentUser.uid,
         currentUser.email,
-        currentUser.name,
+        currentUser.displayName,
         currentUser.year,
         currentUser.major
       );

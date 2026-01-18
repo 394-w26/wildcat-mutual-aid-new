@@ -1,5 +1,5 @@
 import type { Request, Offer, Notification } from '../types/index';
-import { getFirestore, doc, getDoc, collection, setDoc } from "firebase/firestore"; // Ensure you import necessary functions
+import { getFirestore, doc, getDoc, collection, setDoc, addDoc } from "firebase/firestore"; // Ensure you import necessary functions
 import {db} from "../lib/firebase"
 
 
@@ -10,7 +10,7 @@ const notifications: Map<string, Notification> = new Map();
 
 // ============ Requests ============
 
-export const createRequest = (
+export const createRequest = async (
   title: string,
   description: string,
   creatorID: string,
@@ -18,10 +18,9 @@ export const createRequest = (
   creatorName: string,
   creatorYear: string,
   creatorMajor: string
-): Request => {
-  const requestID = `req_${Date.now()}`;
-  const request: Request = {
-    requestID,
+): Promise<Request> => {
+    console.log("creating request...")
+  const request: Omit<Request, 'requestID'> = {
     title,
     description,
     creatorID,
@@ -32,8 +31,14 @@ export const createRequest = (
     creatorYear,
     creatorMajor,
   };
-  requests.set(requestID, request);
-  return request;
+  
+  const docRef = await addDoc(collection(db, 'requests'), request);
+  console.log(docRef)
+  
+  return {
+    ...request,
+    requestID: docRef.id,
+  };
 };
 
 export const getRequest = (requestID: string): Request | undefined => {
