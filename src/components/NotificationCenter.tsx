@@ -5,7 +5,6 @@ import {
   getRequest,
   updateOfferStatus,
 } from "../utilities/database";
-import { set } from "zod";
 
 interface NotificationCenterProps {
   notifications: Notification[];
@@ -66,7 +65,11 @@ export default function NotificationCenter({
 
   const handleDeclineOffer = async (notification: Notification) => {
     try {
-      // Could add delete offer functionality here if needed
+      // Remove the declined notification from the list
+      const updatedNotifications = notifications.filter(
+        (n) => n.notificationID !== notification.notificationID
+      );
+      setNotifications(updatedNotifications);
       onNotificationUpdate();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to decline offer");
@@ -154,25 +157,25 @@ export default function NotificationCenter({
                     </p>
                   </div>
 
-                  {notification.status === "accepted" && (
-                    <div className="bg-green-100 border border-green-400 text-green-800 p-3 rounded-lg mb-3">
-                      <p className="text-sm font-semibold">
-                        Contact Information
-                      </p>
-                      <p className="text-sm mt-1">
-                        <span className="font-semibold">Email:</span>{" "}
-                        <span className="font-mono">
-                          {notification.helperEmail}
-                        </span>
-                      </p>
-                      <p className="text-xs text-green-700 mt-2">
-                        Please reach out to coordinate your meet-up
-                      </p>
+                  {notification.status === "pending" && (
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => handleAcceptOffer(notification)}
+                        className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleDeclineOffer(notification)}
+                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                      >
+                        Decline
+                      </button>
                     </div>
                   )}
 
                   {notification.status === "accepted" && (
-                    <div className="bg-green-100 border border-green-400 text-green-800 p-3 rounded-lg mb-3">
+                    <div className="bg-green-100 border border-green-400 text-green-800 p-3 rounded-lg mt-3">
                       <p className="text-sm font-semibold">
                         Contact Information
                       </p>
