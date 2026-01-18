@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { Notification, Request } from '../types/index';
 import { updateRequestStatus, getRequest, updateOfferStatus } from '../utilities/database';
+import { set } from 'zod';
 
 interface NotificationCenterProps {
   notifications: Notification[];
+  setNotifications: (notifications: Notification[]) => void;
   onClose: () => void;
   onNotificationUpdate: () => void;
 }
@@ -12,6 +14,7 @@ export default function NotificationCenter({
   notifications,
   onClose,
   onNotificationUpdate,
+  setNotifications,
 }: NotificationCenterProps) {
   const [error, setError] = useState('');
   const [requestsMap, setRequestsMap] = useState<Record<string, Request>>({});
@@ -36,7 +39,15 @@ export default function NotificationCenter({
     try {
       await updateOfferStatus(notification.requestID, notification.offerID, 'accepted');
       await updateRequestStatus(notification.requestID, 'accepted');
-      onNotificationUpdate();
+  
+      // Update the notification status to 'accepted' in the notifications array
+      const updatedNotifications = notifications.map((n) =>
+        n.notificationID === notification.notificationID
+          ? { ...n, status: 'accepted' }
+          : n
+      );
+      setNotifications(updatedNotifications as Notification[]);
+      onNotificationUpdate(); // Trigger any external updates
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept offer');
     }

@@ -394,6 +394,7 @@ export default function Dashboard() {
 
       {showNotifications && (
         <NotificationCenter
+          setNotifications = {setNotifications}
           notifications={notifications}
           onClose={() => setShowNotifications(false)}
           onNotificationUpdate={handleRefreshNotifications}
