@@ -1,5 +1,5 @@
 import type { Request, Offer, Notification } from '../types/index';
-import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 
@@ -118,15 +118,13 @@ export async function createProfile(uid: string, name: string, year: string, maj
 }
 // ============ Offers ============
 
-export const createOffer = (
+export const createOffer = async (
   requestID: string,
   helperID: string,
   helperEmail: string,
   helperName: string
-): Offer => {
-  const offerID = `offer_${Date.now()}`;
-  const offer: Offer = {
-    offerID,
+): Promise<Offer> => {
+  const offer: Omit<Offer, 'offerID'> = {
     requestID,
     helperID,
     status: 'pending',
@@ -134,40 +132,75 @@ export const createOffer = (
     helperEmail,
     helperName,
   };
-  offers.set(offerID, offer);
-  return offer;
+  const docRef = await addDoc(collection(db, 'offers'), offer);
+  return {
+    ...offer,
+    offerID: docRef.id,
+  };
 };
 
-export const getOffer = (offerID: string): Offer | undefined => {
-  return offers.get(offerID);
-};
-
-export const getOffersByRequest = (requestID: string): Offer[] => {
-  return Array.from(offers.values())
-    .filter((o) => o.requestID === requestID)
-    .sort((a, b) => b.createdAt - a.createdAt);
-};
-
-export const getOffersByHelper = (helperID: string): Offer[] => {
-  return Array.from(offers.values())
-    .filter((o) => o.helperID === helperID)
-    .sort((a, b) => b.createdAt - a.createdAt);
-};
-
-export const updateOfferStatus = (offerID: string, status: 'pending' | 'accepted'): Offer | undefined => {
-  const offer = offers.get(offerID);
-  if (offer) {
-    offer.status = status;
-    offers.set(offerID, offer);
+export const getOffer = async (offerID: string): Promise<Offer | undefined> => {
+  const docRef = doc(db, 'offers', offerID);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return {
+      ...docSnap.data(),
+      offerID: docSnap.id,
+    } as Offer;
   }
-  return offer;
+  return undefined;
 };
 
-export const getOfferByRequestAndHelper = (requestID: string, helperID: string): Offer | undefined => {
-  for (const offer of offers.values()) {
-    if (offer.requestID === requestID && offer.helperID === helperID) {
-      return offer;
-    }
+export const getOffersByRequest = async (requestID: string): Promise<Offer[]> => {
+  const q = query(
+    collection(db, 'offers'),
+    where('requestID', '==', requestID),
+    orderBy('createdAt', 'desc')
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    ...doc.data(),
+    offerID: doc.id,
+  } as Offer));
+};
+
+export const getOffersByHelper = async (helperID: string): Promise<Offer[]> => {
+  const q = query(
+    collection(db, 'offers'),
+    where('helperID', '==', helperID),
+    orderBy('createdAt', 'desc')
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    ...doc.data(),
+    offerID: doc.id,
+  } as Offer));
+};
+
+export const updateOfferStatus = async (
+  offerID: string,
+  status: 'pending' | 'accepted'
+): Promise<void> => {
+  const docRef = doc(db, 'offers', offerID);
+  await updateDoc(docRef, { status });
+};
+
+export const getOfferByRequestAndHelper = async (
+  requestID: string,
+  helperID: string
+): Promise<Offer | undefined> => {
+  const q = query(
+    collection(db, 'offers'),
+    where('requestID', '==', requestID),
+    where('helperID', '==', helperID)
+  );
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.docs.length > 0) {
+    const doc = querySnapshot.docs[0];
+    return {
+      ...doc.data(),
+      offerID: doc.id,
+    } as Offer;
   }
   return undefined;
 };

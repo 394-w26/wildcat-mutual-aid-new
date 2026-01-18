@@ -32,6 +32,31 @@ export default function Dashboard() {
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [checkingOffer, setCheckingOffer] = useState<boolean>(false);
+  const [alreadyOffered, setAlreadyOffered] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkOffer = async () => {
+      if (selectedRequest && currentUser) {
+        setCheckingOffer(true);
+        try {
+          const offer = await getOfferByRequestAndHelper(
+            selectedRequest.requestID,
+            currentUser.uid
+          );
+          setAlreadyOffered(!!offer);
+        } catch (err) {
+          console.error('Error checking offer:', err);
+          setAlreadyOffered(false);
+        } finally {
+          setCheckingOffer(false);
+        }
+      } else {
+        setAlreadyOffered(false);
+      }
+    };
+    checkOffer();
+  }, [selectedRequest, currentUser]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const handleRefreshRequests = useCallback(async () => {
@@ -58,7 +83,7 @@ export default function Dashboard() {
     }
   }, [currentUser]);
 
-  const handleOfferHelp = (request: Request) => {
+  const handleOfferHelp = async (request: Request) => {
     if (
       !currentUser ||
       !currentUser.email ||
@@ -69,24 +94,24 @@ export default function Dashboard() {
       return;
 
     try {
-      const offer = createOffer(
+      const offer = await createOffer(
         request.requestID,
         currentUser.uid,
         currentUser.email,
         currentUser.displayName
       );
 
-      createNotification(
-        request.creatorID,
-        offer.offerID,
-        request.requestID,
-        currentUser.uid,
-        currentUser.displayName,
-        currentUser.email,
-        currentUser.year,
-        currentUser.major,
-        'pending'
-      );
+      // createNotification(
+      //   request.creatorID,
+      //   offer.offerID,
+      //   request.requestID,
+      //   currentUser.uid,
+      //   currentUser.displayName,
+      //   currentUser.email,
+      //   currentUser.year,
+      //   currentUser.major,
+      //   'pending'
+      // );
 
       setSuccess(`Offer sent to ${request.creatorName}!`);
       setTimeout(() => setSuccess(''), 3000);
@@ -291,28 +316,21 @@ export default function Dashboard() {
 
             {currentUser?.uid !== selectedRequest.creatorID &&
               selectedRequest.status === 'open' &&
-              (() => {
-                const alreadyOffered = currentUser
-                  ? getOfferByRequestAndHelper(
-                      selectedRequest.requestID,
-                      currentUser.uid
-                    )
-                  : null;
-                return alreadyOffered ? (
-                  <div className="bg-blue-100 border border-blue-400 text-blue-700 p-4 rounded-lg">
-                    <p className="font-semibold">
-                      ✓ You already offered help on this request
-                    </p>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleOfferHelp(selectedRequest)}
-                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                  >
-                    Offer Help
-                  </button>
-                );
-              })()}
+              (alreadyOffered ? (
+                <div className="bg-blue-100 border border-blue-400 text-blue-700 p-4 rounded-lg">
+                  <p className="font-semibold">
+                    ✓ You already offered help on this request
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleOfferHelp(selectedRequest)}
+                  disabled={checkingOffer}
+                  className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                >
+                  {checkingOffer ? 'Checking...' : 'Offer Help'}
+                </button>
+              ))}
 
             {selectedRequest.status === 'accepted' && (
               <div className="bg-green-100 border border-green-400 text-green-700 p-4 rounded-lg">
