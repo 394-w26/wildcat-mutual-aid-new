@@ -1,5 +1,5 @@
 import type { Request, Offer, Notification } from '../types/index';
-import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 
@@ -75,11 +75,12 @@ export const getRequestsByCreator = async (creatorID: string): Promise<Request[]
   } as Request));
 };
 
-export const updateRequestStatus = (requestID: string, status: 'open' | 'accepted' | 'closed'): Request | undefined => {
+export const updateRequestStatus = async (requestID: string, status: 'open' | 'accepted' | 'closed'): Promise<Request | undefined> => {
   const request = requests.get(requestID);
   if (request) {
     request.status = status;
     requests.set(requestID, request);
+    await updateDoc(doc(collection(db, 'requests'), requestID), { status });
   }
   return request;
 };
@@ -207,7 +208,7 @@ export const getOfferByRequestAndHelper = async (
 
 // ============ Notifications ============
 
-export const createNotification = (
+export const createNotification = async (
   userID: string,
   offerID: string,
   requestID: string,
@@ -217,10 +218,8 @@ export const createNotification = (
   helperYear: string,
   helperMajor: string,
   status: 'pending' | 'accepted'
-): Notification => {
-  const notificationID = `notif_${Date.now()}`;
-  const notification: Notification = {
-    notificationID,
+): Promise<Notification> => {
+  const notification: Omit<Notification, 'notificationID'> = {
     userID,
     offerID,
     requestID,
@@ -233,45 +232,68 @@ export const createNotification = (
     createdAt: Date.now(),
     read: false,
   };
-  notifications.set(notificationID, notification);
-  return notification;
+  const docRef = await addDoc(collection(db, 'notifications'), notification);
+  const notificationID = docRef.id;
+  const fullNotification: Notification = { ...notification, notificationID };
+  notifications.set(notificationID, fullNotification);
+  return fullNotification;
 };
 
-export const getNotification = (notificationID: string): Notification | undefined => {
+export const getNotification = async (notificationID: string): Promise<Notification | undefined> => {
+  const docRef = doc(db, 'notifications', notificationID);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return { notificationID, ...docSnap.data() } as Notification;
+  }
   return notifications.get(notificationID);
 };
 
-export const getNotificationsByUser = (userID: string): Notification[] => {
-  return Array.from(notifications.values())
-    .filter((n) => n.userID === userID)
-    .sort((a, b) => b.createdAt - a.createdAt);
+export const getNotificationsByUser = async (userID: string): Promise<Notification[]> => {
+  const q = query(
+    collection(db, 'notifications'),
+    where('userID', '==', userID),
+    orderBy('createdAt', 'desc')
+  );
+  const querySnapshot = await getDocs(q);
+  const notificationsList: Notification[] = [];
+  querySnapshot.forEach((doc) => {
+    notificationsList.push({ notificationID: doc.id, ...doc.data() } as Notification);
+  });
+  return notificationsList;
 };
 
-export const getUnreadNotifications = (userID: string): Notification[] => {
-  return getNotificationsByUser(userID).filter((n) => !n.read);
+export const getUnreadNotifications = async (userID: string): Promise<Notification[]> => {
+  const notifications = await getNotificationsByUser(userID);
+  return notifications.filter((n) => !n.read);
 };
 
-export const markNotificationAsRead = (notificationID: string): Notification | undefined => {
+export const markNotificationAsRead = async (notificationID: string): Promise<Notification | undefined> => {
   const notification = notifications.get(notificationID);
   if (notification) {
     notification.read = true;
     notifications.set(notificationID, notification);
+    const firestore = getFirestore();
+    await updateDoc(doc(collection(firestore, 'notifications'), notificationID), { read: true });
   }
   return notification;
 };
 
-export const updateNotificationStatus = (
+export const updateNotificationStatus = async (
   notificationID: string,
   status: 'pending' | 'accepted'
-): Notification | undefined => {
+): Promise<Notification | undefined> => {
   const notification = notifications.get(notificationID);
   if (notification) {
     notification.status = status;
     notifications.set(notificationID, notification);
+    const firestore = getFirestore();
+    await updateDoc(doc(collection(firestore, 'notifications'), notificationID), { status });
   }
   return notification;
 };
 
-export const deleteNotification = (notificationID: string): void => {
+export const deleteNotification = async (notificationID: string): Promise<void> => {
   notifications.delete(notificationID);
+  const firestore = getFirestore();
+  await deleteDoc(doc(collection(firestore, 'notifications'), notificationID));
 };

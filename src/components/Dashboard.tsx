@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from '../utilities/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -26,9 +26,7 @@ export default function Dashboard() {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [requests, setRequests] = useState<Request[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>(
-    currentUser ? getNotificationsByUser(currentUser.uid) : []
-  );
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -58,7 +56,18 @@ export default function Dashboard() {
     checkOffer();
   }, [selectedRequest, currentUser]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (currentUser) {
+        const notifs = await getNotificationsByUser(currentUser.uid);
+        setNotifications(notifs);
+      }
+    };
+    fetchNotifications();
+  }, [currentUser]);
+
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+
   const handleRefreshRequests = useCallback(async () => {
     const getAll = async () => {
       try {
@@ -77,9 +86,10 @@ export default function Dashboard() {
   }, []);
 
 
-  const handleRefreshNotifications = useCallback(() => {
+  const handleRefreshNotifications = useCallback(async () => {
     if (currentUser) {
-      setNotifications(getNotificationsByUser(currentUser.uid));
+      const notifs = await getNotificationsByUser(currentUser.uid);
+      setNotifications(notifs);
     }
   }, [currentUser]);
 
@@ -101,17 +111,17 @@ export default function Dashboard() {
         currentUser.displayName
       );
 
-      // createNotification(
-      //   request.creatorID,
-      //   offer.offerID,
-      //   request.requestID,
-      //   currentUser.uid,
-      //   currentUser.displayName,
-      //   currentUser.email,
-      //   currentUser.year,
-      //   currentUser.major,
-      //   'pending'
-      // );
+      createNotification(
+        request.creatorID,
+        offer.offerID,
+        request.requestID,
+        currentUser.uid,
+        currentUser.displayName,
+        currentUser.email,
+        currentUser.year,
+        currentUser.major,
+        'pending'
+      );
 
       setSuccess(`Offer sent to ${request.creatorName}!`);
       setTimeout(() => setSuccess(''), 3000);

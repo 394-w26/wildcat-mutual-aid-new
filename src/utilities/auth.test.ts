@@ -134,7 +134,7 @@ describe('Authentication Functions', () => {
     const { createOffer, createNotification } = await import('../utilities/database');
 
     // Create an offer
-    const offer = createOffer(
+    const offer = await createOffer(
       'req_123',
       'helper_123',
       'helper@u.northwestern.edu',
@@ -145,7 +145,7 @@ describe('Authentication Functions', () => {
     expect(offer.status).toBe('pending');
 
     // Create notification from the offer
-    const notification = createNotification(
+    const notification = await createNotification(
       'requester_123',
       offer.offerID,
       'req_123',
@@ -197,7 +197,7 @@ describe('Database Functions', () => {
   it('should create and retrieve offers', async () => {
     const { createOffer, getOffer } = await import('../utilities/database');
 
-    const offer = createOffer(
+    const offer = await createOffer(
       'req_123',
       'helper_123',
       'helper@u.northwestern.edu',
@@ -214,7 +214,7 @@ describe('Database Functions', () => {
   it('should create and retrieve notifications', async () => {
     const { createNotification, getNotification, getNotificationsByUser } = await import('../utilities/database');
 
-    const notification = createNotification(
+    const notification = await createNotification(
       'user_123',
       'offer_123',
       'req_123',
@@ -229,10 +229,10 @@ describe('Database Functions', () => {
     expect(notification).toBeDefined();
     expect(notification.read).toBe(false);
 
-    const retrieved = getNotification(notification.notificationID);
+    const retrieved = await getNotification(notification.notificationID);
     expect(retrieved).toEqual(notification);
 
-    const userNotifications = getNotificationsByUser('user_123');
+    const userNotifications = await getNotificationsByUser('user_123');
     expect(userNotifications).toContain(notification);
   });
 });
