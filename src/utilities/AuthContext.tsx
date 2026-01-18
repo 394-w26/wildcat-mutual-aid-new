@@ -1,7 +1,8 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { PropsWithChildren } from 'react';
 import { auth } from '../lib/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { getUserProfile } from './database';
 
 interface AuthContextType {
@@ -25,17 +26,39 @@ interface User {
 }
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
+  const [firebaseUser, firebaseLoading] = useAuthState(auth);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Sync Firebase auth state with currentUser
+  useEffect(() => {
+    const syncUser = async () => {
+      if (firebaseUser) {
+        const profile = await getUserProfile(firebaseUser.uid);
+        const user: User = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || '',
+          photoURL: firebaseUser.photoURL || undefined,
+          year: profile?.year,
+          major: profile?.major,
+        };
+        setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+      }
+      setIsLoading(firebaseLoading);
+    };
+    syncUser();
+  }, [firebaseUser, firebaseLoading]);
 
   const login = async () => {
     try {
-      setIsLoading(true);
       const googleProvider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, googleProvider);
 
       // Set the current user with Firebase user data
-      const firebaseUser = {
+      const firebaseUserData = {
         uid: result.user.uid,
         email: result.user.email || '',
         displayName: result.user.displayName || '',
@@ -44,20 +67,18 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
       // Fetch profile if exists
       const profile = await getUserProfile(result.user.uid);
-      const currentUser = {
-        ...firebaseUser,
-        name: profile?.name || firebaseUser.displayName,
+      const user: User = {
+        ...firebaseUserData,
+        name: profile?.name || firebaseUserData.displayName,
         year: profile?.year,
         major: profile?.major,
       };
 
-      setCurrentUser(currentUser);
-      return currentUser;
+      setCurrentUser(user);
+      return user;
     } catch (err) {
       console.error('error signing in');
       return null;
-    } finally {
-      setIsLoading(false);
     }
   };
 
