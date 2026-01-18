@@ -1,12 +1,7 @@
-import type { Request, Offer, Notification } from '../types/index';
+import type { Request, Offer } from '../types/index';
 import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from "../lib/firebase";
 
-
-// Simple in-memory storage for local development
-const requests: Map<string, Request> = new Map();
-const offers: Map<string, Offer> = new Map();
-const notifications: Map<string, Notification> = new Map();
 
 // ============ Requests ============
 
@@ -75,14 +70,8 @@ export const getRequestsByCreator = async (creatorID: string): Promise<Request[]
   } as Request));
 };
 
-export const updateRequestStatus = async (requestID: string, status: 'open' | 'accepted' | 'closed'): Promise<Request | undefined> => {
-  const request = requests.get(requestID);
-  if (request) {
-    request.status = status;
-    requests.set(requestID, request);
-    await updateDoc(doc(collection(db, 'requests'), requestID), { status });
-  }
-  return request;
+export const updateRequestStatus = async (requestID: string, status: 'open' | 'accepted' | 'closed'): Promise<void> => {
+  await updateDoc(doc(collection(db, 'requests'), requestID), { status });
 };
 
 
@@ -133,15 +122,21 @@ export const createOffer = async (
     helperEmail,
     helperName,
   };
-  const docRef = await addDoc(collection(db, 'offers'), offer);
+  const docRef = await addDoc(
+    collection(db, 'requests', requestID, 'offers'),
+    offer
+  );
   return {
     ...offer,
     offerID: docRef.id,
   };
 };
 
-export const getOffer = async (offerID: string): Promise<Offer | undefined> => {
-  const docRef = doc(db, 'offers', offerID);
+export const getOffer = async (
+  requestID: string,
+  offerID: string
+): Promise<Offer | undefined> => {
+  const docRef = doc(db, 'requests', requestID, 'offers', offerID);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
     return {
@@ -154,8 +149,7 @@ export const getOffer = async (offerID: string): Promise<Offer | undefined> => {
 
 export const getOffersByRequest = async (requestID: string): Promise<Offer[]> => {
   const q = query(
-    collection(db, 'offers'),
-    where('requestID', '==', requestID),
+    collection(db, 'requests', requestID, 'offers'),
     orderBy('createdAt', 'desc')
   );
   const querySnapshot = await getDocs(q);
@@ -166,23 +160,32 @@ export const getOffersByRequest = async (requestID: string): Promise<Offer[]> =>
 };
 
 export const getOffersByHelper = async (helperID: string): Promise<Offer[]> => {
-  const q = query(
-    collection(db, 'offers'),
-    where('helperID', '==', helperID),
-    orderBy('createdAt', 'desc')
-  );
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({
-    ...doc.data(),
-    offerID: doc.id,
-  } as Offer));
+  const requests = await getAllRequests();
+  const allOffers: Offer[] = [];
+  
+  for (const request of requests) {
+    const q = query(
+      collection(db, 'requests', request.requestID, 'offers'),
+      where('helperID', '==', helperID)
+    );
+    const querySnapshot = await getDocs(q);
+    querySnapshot.docs.forEach((doc) => {
+      allOffers.push({
+        ...doc.data(),
+        offerID: doc.id,
+      } as Offer);
+    });
+  }
+  
+  return allOffers.sort((a, b) => b.createdAt - a.createdAt);
 };
 
 export const updateOfferStatus = async (
+  requestID: string,
   offerID: string,
   status: 'pending' | 'accepted'
 ): Promise<void> => {
-  const docRef = doc(db, 'offers', offerID);
+  const docRef = doc(db, 'requests', requestID, 'offers', offerID);
   await updateDoc(docRef, { status });
 };
 
@@ -191,8 +194,7 @@ export const getOfferByRequestAndHelper = async (
   helperID: string
 ): Promise<Offer | undefined> => {
   const q = query(
-    collection(db, 'offers'),
-    where('requestID', '==', requestID),
+    collection(db, 'requests', requestID, 'offers'),
     where('helperID', '==', helperID)
   );
   const querySnapshot = await getDocs(q);
@@ -206,128 +208,25 @@ export const getOfferByRequestAndHelper = async (
   return undefined;
 };
 
-// ============ Notifications ============
+// ============ Notifications (derived from Offers) ============
 
-export const createNotification = async (
-  userID: string,
-  offerID: string,
-  requestID: string,
-  helperID: string,
-  helperName: string,
-  helperEmail: string,
-  helperYear: string,
-  helperMajor: string,
-  status: 'pending' | 'accepted'
-): Promise<Notification> => {
-  // Derive notifications from offers instead of storing a notifications collection.
-  const notificationID = offerID;
-  const notification: Notification = {
-    notificationID,
-    userID,
-    offerID,
-    requestID,
-    helperID,
-    helperName,
-    helperEmail,
-    helperYear,
-    helperMajor,
-    status,
-    createdAt: Date.now(),
-    read: notifications.get(notificationID)?.read ?? false,
-  };
-  notifications.set(notificationID, notification);
-  return notification;
-};
+export const getPendingNotifications = async (creatorID: string): Promise<Array<Offer & { request: Request }>> => {
+  const requests = await getRequestsByCreator(creatorID);
+  const openRequests = requests.filter((r) => r.status !== 'closed');
+  
+  const pendingOffers: Array<Offer & { request: Request }> = [];
 
-export const getNotification = async (notificationID: string): Promise<Notification | undefined> => {
-  const cached = notifications.get(notificationID);
-  if (cached) return cached;
-
-  const offer = await getOffer(notificationID);
-  if (!offer) return undefined;
-
-  const request = await getRequest(offer.requestID);
-  if (!request) return undefined;
-
-  const derived: Notification = {
-    notificationID,
-    userID: request.creatorID,
-    offerID: offer.offerID,
-    requestID: offer.requestID,
-    helperID: offer.helperID,
-    helperName: offer.helperName,
-    helperEmail: offer.helperEmail,
-    helperYear: '',
-    helperMajor: '',
-    status: offer.status,
-    createdAt: offer.createdAt,
-    read: false,
-  };
-  notifications.set(notificationID, derived);
-  return derived;
-};
-
-export const getNotificationsByUser = async (userID: string): Promise<Notification[]> => {
-  // Build notifications from offers associated to the user's requests.
-  const userRequests = await getRequestsByCreator(userID);
-  const notificationsList: Notification[] = [];
-
-  for (const request of userRequests) {
-    const requestOffers = await getOffersByRequest(request.requestID);
-    requestOffers.forEach((offer) => {
-      const notificationID = offer.offerID;
-      const cached = notifications.get(notificationID);
-      const notification: Notification = {
-        notificationID,
-        userID,
-        offerID: offer.offerID,
-        requestID: offer.requestID,
-        helperID: offer.helperID,
-        helperName: offer.helperName,
-        helperEmail: offer.helperEmail,
-        helperYear: '',
-        helperMajor: '',
-        status: offer.status,
-        createdAt: offer.createdAt,
-        read: cached?.read ?? false,
-      };
-      notifications.set(notificationID, notification);
-      notificationsList.push(notification);
-    });
+  for (const request of openRequests) {
+    const offers = await getOffersByRequest(request.requestID);
+    const requestPendingOffers = offers.filter((o) => o.status === 'pending');
+    
+    for (const offer of requestPendingOffers) {
+      pendingOffers.push({
+        ...offer,
+        request,
+      });
+    }
   }
 
-  return notificationsList.sort((a, b) => b.createdAt - a.createdAt);
-};
-
-export const getUnreadNotifications = async (userID: string): Promise<Notification[]> => {
-  const notifications = await getNotificationsByUser(userID);
-  return notifications.filter((n) => !n.read);
-};
-
-export const markNotificationAsRead = async (notificationID: string): Promise<Notification | undefined> => {
-  const notification = await getNotification(notificationID);
-  if (notification) {
-    const updated: Notification = { ...notification, read: true };
-    notifications.set(notificationID, updated);
-    return updated;
-  }
-  return undefined;
-};
-
-export const updateNotificationStatus = async (
-  notificationID: string,
-  status: 'pending' | 'accepted'
-): Promise<Notification | undefined> => {
-  const notification = await getNotification(notificationID);
-  if (notification) {
-    await updateOfferStatus(notification.offerID, status);
-    const updated: Notification = { ...notification, status };
-    notifications.set(notificationID, updated);
-    return updated;
-  }
-  return undefined;
-};
-
-export const deleteNotification = async (notificationID: string): Promise<void> => {
-  notifications.delete(notificationID);
+  return pendingOffers.sort((a, b) => b.createdAt - a.createdAt);
 };

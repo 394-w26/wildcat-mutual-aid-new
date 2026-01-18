@@ -3,10 +3,9 @@ import { useAuth } from '../utilities/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   getAllRequests,
-  getNotificationsByUser,
   createOffer,
-  createNotification,
   getOfferByRequestAndHelper,
+  getPendingNotifications,
 } from '../utilities/database';
 import type { Request, Notification } from '../types/index';
 import RequestForm from './RequestForm';
@@ -59,8 +58,26 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchNotifications = async () => {
       if (currentUser) {
-        const notifs = await getNotificationsByUser(currentUser.uid);
-        setNotifications(notifs);
+        try {
+          const pendingOffers = await getPendingNotifications(currentUser.uid);
+          const notificationsToDisplay: Notification[] = pendingOffers.map((offer) => ({
+            notificationID: `${offer.requestID}_${offer.offerID}`,
+            userID: currentUser.uid,
+            offerID: offer.offerID,
+            requestID: offer.requestID,
+            helperID: offer.helperID,
+            helperName: offer.helperName,
+            helperEmail: offer.helperEmail,
+            helperYear: '',
+            helperMajor: '',
+            status: offer.status as 'pending' | 'accepted',
+            createdAt: offer.createdAt,
+            read: false,
+          }));
+          setNotifications(notificationsToDisplay);
+        } catch (err) {
+          console.error('Error fetching notifications:', err);
+        }
       }
     };
     fetchNotifications();
@@ -88,8 +105,26 @@ export default function Dashboard() {
 
   const handleRefreshNotifications = useCallback(async () => {
     if (currentUser) {
-      const notifs = await getNotificationsByUser(currentUser.uid);
-      setNotifications(notifs);
+      try {
+        const pendingOffers = await getPendingNotifications(currentUser.uid);
+        const notificationsToDisplay: Notification[] = pendingOffers.map((offer) => ({
+          notificationID: `${offer.requestID}_${offer.offerID}`,
+          userID: currentUser.uid,
+          offerID: offer.offerID,
+          requestID: offer.requestID,
+          helperID: offer.helperID,
+          helperName: offer.helperName,
+          helperEmail: offer.helperEmail,
+          helperYear: '',
+          helperMajor: '',
+          status: offer.status as 'pending' | 'accepted',
+          createdAt: offer.createdAt,
+          read: false,
+        }));
+        setNotifications(notificationsToDisplay);
+      } catch (err) {
+        console.error('Error refreshing notifications:', err);
+      }
     }
   }, [currentUser]);
 
@@ -109,18 +144,6 @@ export default function Dashboard() {
         currentUser.uid,
         currentUser.email,
         currentUser.displayName
-      );
-
-      createNotification(
-        request.creatorID,
-        offer.offerID,
-        request.requestID,
-        currentUser.uid,
-        currentUser.displayName,
-        currentUser.email,
-        currentUser.year,
-        currentUser.major,
-        'pending'
       );
 
       setSuccess(`Offer sent to ${request.creatorName}!`);

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import type { Notification } from '../types/index';
-import { updateNotificationStatus, markNotificationAsRead, updateRequestStatus, getRequest, deleteNotification } from '../utilities/database';
+import { useState, useEffect } from 'react';
+import type { Notification, Request } from '../types/index';
+import { updateRequestStatus, getRequest, updateOfferStatus } from '../utilities/database';
 
 interface NotificationCenterProps {
   notifications: Notification[];
@@ -14,11 +14,27 @@ export default function NotificationCenter({
   onNotificationUpdate,
 }: NotificationCenterProps) {
   const [error, setError] = useState('');
+  const [requestsMap, setRequestsMap] = useState<Record<string, Request>>({});
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      const requests: Record<string, Request> = {};
+      for (const notification of notifications) {
+        if (!requests[notification.requestID]) {
+          const request = await getRequest(notification.requestID);
+          if (request) {
+            requests[notification.requestID] = request;
+          }
+        }
+      }
+      setRequestsMap(requests);
+    };
+    fetchRequests();
+  }, [notifications]);
 
   const handleAcceptOffer = async (notification: Notification) => {
     try {
-      await markNotificationAsRead(notification.notificationID);
-      await updateNotificationStatus(notification.notificationID, 'accepted');
+      await updateOfferStatus(notification.requestID, notification.offerID, 'accepted');
       await updateRequestStatus(notification.requestID, 'accepted');
       onNotificationUpdate();
     } catch (err) {
@@ -28,8 +44,7 @@ export default function NotificationCenter({
 
   const handleDeclineOffer = async (notification: Notification) => {
     try {
-      // Remove the notification completely when declined
-      await deleteNotification(notification.notificationID);
+      // Could add delete offer functionality here if needed
       onNotificationUpdate();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to decline offer');
@@ -59,8 +74,8 @@ export default function NotificationCenter({
           <p className="text-gray-500 text-center py-8">No notifications yet</p>
         ) : (
           <div className="space-y-4">
-            {notifications.map(async (notification) => {
-              const request = await getRequest(notification.requestID);
+            {notifications.map((notification) => {
+              const request = requestsMap[notification.requestID];
               return (
                 <div
                   key={notification.notificationID}
