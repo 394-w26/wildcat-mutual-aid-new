@@ -1,15 +1,24 @@
 import { useState } from 'react';
 import { useAuth } from '../utilities/AuthContext';
+import { useNavigate } from 'react-router-dom'; // Assuming you're using react-router for navigation
+import { checkUserProfile } from '../utilities/database'; // Function to check if the user has a profile
 
 export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
-
   const { login, isLoading } = useAuth();
+  const navigate = useNavigate();
 
   const handleGoogleLogin = async () => {
     setError(null);
     try {
-      await login();
+      const user = await login();
+      const hasProfile = await checkUserProfile(user.uid); // Check if the user has a profile
+
+      if (!hasProfile) {
+        navigate('/create-profile'); // Redirect to profile creation page
+      } else {
+        navigate('/dashboard'); // Redirect to dashboard
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     }

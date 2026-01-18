@@ -1,4 +1,7 @@
 import type { Request, Offer, Notification } from '../types/index';
+import { getFirestore, doc, getDoc, collection } from "firebase/firestore"; // Ensure you import necessary functions
+import {db} from "../lib/firebase"
+
 
 // Simple in-memory storage for local development
 const requests: Map<string, Request> = new Map();
@@ -56,6 +59,13 @@ export const updateRequestStatus = (requestID: string, status: 'open' | 'accepte
   return request;
 };
 
+
+export async function checkUserProfile(uid: string): Promise<boolean> {
+  
+  const firestore = getFirestore(); // Get Firestore instance
+  const userProfile = await getDoc(doc(collection(firestore, 'profiles'), uid)); // Use getDoc and doc to fetch the document
+  return userProfile.exists();
+}
 // ============ Offers ============
 
 export const createOffer = (
