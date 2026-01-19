@@ -7,6 +7,7 @@ export default function CreateProfile() {
   const [name, setName] = useState('');
   const [year, setYear] = useState('');
   const [major, setMajor] = useState('');
+  const [photoURL, setPhotoURL] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { currentUser, updateProfile } = useAuth();
@@ -22,14 +23,20 @@ export default function CreateProfile() {
     }
   }, [currentUser, navigate]);
 
+  useEffect(() => {
+    if (currentUser && currentUser.photoURL) {
+      setPhotoURL(currentUser.photoURL);
+    }
+  }, [currentUser]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
     setError(null);
     setIsLoading(true);
     try {
-      await createProfile(currentUser.uid, name, year, major, currentUser.email || '');
-      updateProfile({ name, year, major });
+      await createProfile(currentUser.uid, name, year, major, currentUser.email || '', photoURL);
+      updateProfile({ name, year, major, photoURL });
       navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create profile');

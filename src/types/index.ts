@@ -16,6 +16,7 @@ export const userSchema = z.object({
   year: z.string(),
   major: z.string(),
   passwordHash: z.string(),
+  photoURL: z.string(),
 });
 
 export type User = z.infer<typeof userSchema>;
@@ -76,6 +77,9 @@ export const offerSchema = z.object({
   createdAt: z.number(),
   helperEmail: z.string(),
   helperName: z.string(),
+  helperYear: z.string(),
+  helperMajor: z.string(),
+  helperPhotoURL: z.string(),
 });
 
 export type Offer = z.infer<typeof offerSchema>;

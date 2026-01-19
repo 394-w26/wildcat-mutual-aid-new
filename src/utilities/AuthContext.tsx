@@ -14,6 +14,7 @@ interface AuthContextType {
     name: string;
     year: string;
     major: string;
+    photoURL: string;
   }) => void;
 }
 
@@ -125,6 +126,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     name: string;
     year: string;
     major: string;
+    photoURL: string;
   }) => {
     if (currentUser) {
       setCurrentUser({ ...currentUser, ...profile });

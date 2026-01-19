@@ -82,7 +82,7 @@ export async function checkUserProfile(uid: string): Promise<boolean> {
   return userProfile.exists();
 }
 
-export async function getUserProfile(uid: string): Promise<{ name: string; year: string; major: string; email: string } | null> {
+export async function getUserProfile(uid: string): Promise<{ name: string; year: string; major: string; email: string, photoURL: string } | null> {
   const firestore = getFirestore();
   const userProfile = await getDoc(doc(collection(firestore, 'profiles'), uid));
   if (userProfile.exists()) {
@@ -92,17 +92,19 @@ export async function getUserProfile(uid: string): Promise<{ name: string; year:
       year: data.year || '',
       major: data.major || '',
       email: data.email || '',
+      photoURL: data.photoURL || '',
     };
   }
   return null;
 }
 
-export async function createProfile(uid: string, name: string, year: string, major: string, email: string): Promise<void> {
+export async function createProfile(uid: string, name: string, year: string, major: string, email: string, photoURL: string): Promise<void> {
   const firestore = getFirestore();
   await setDoc(doc(collection(firestore, 'profiles'), uid), {
     name,
     year,
     major,
+    photoURL,
     email,
   });
 }
@@ -112,7 +114,10 @@ export const createOffer = async (
   requestID: string,
   helperID: string,
   helperEmail: string,
-  helperName: string
+  helperName: string,
+  helperYear: string,
+  helperMajor: string,
+  helperPhotoURL: string
 ): Promise<Offer> => {
   const offer: Omit<Offer, 'offerID'> = {
     requestID,
@@ -121,6 +126,9 @@ export const createOffer = async (
     createdAt: Date.now(),
     helperEmail,
     helperName,
+    helperYear,
+    helperMajor,
+    helperPhotoURL,
   };
   const docRef = await addDoc(
     collection(db, 'requests', requestID, 'offers'),
