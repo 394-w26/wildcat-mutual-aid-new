@@ -49,7 +49,11 @@ export const getRequest = async (requestID: string): Promise<Request | undefined
 };
 
 export const getAllRequests = async (): Promise<Request[]> => {
-  const q = query(collection(db, 'requests'), orderBy('createdAt', 'desc'));
+  const q = query(
+    collection(db, 'requests'),
+    where('status', '==', 'open'),
+    orderBy('createdAt', 'desc')
+  );
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map((doc) => ({
     ...doc.data(),

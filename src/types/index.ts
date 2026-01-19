@@ -50,7 +50,7 @@ export const requestSchema = z.object({
   title: z.string(),
   description: z.string(),
   creatorID: z.string(),
-  status: z.enum(['open', 'accepted', 'closed']),
+  status: z.enum(['open', 'closed']),
   createdAt: z.number(),
   creatorEmail: z.string(),
   creatorName: z.string(),

@@ -3,7 +3,6 @@ import { useAuth } from '../utilities/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import type { Notification, Request } from '../types/index';
 import {
-  updateRequestStatus,
   getRequest,
   updateOfferStatus,
   getPendingNotifications,
@@ -82,8 +81,6 @@ export default function NotificationsPage() {
         notification.offerID,
         'accepted'
       );
-      await updateRequestStatus(notification.requestID, 'accepted');
-
       setAcceptedNotifications((prev) =>
         new Set(prev).add(notification.notificationID)
       );

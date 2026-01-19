@@ -56,9 +56,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         const profile = await getUserProfile(firebaseUser.uid);
         const user: User = {
           uid: firebaseUser.uid,
-          email,
-          displayName: firebaseUser.displayName || '',
-          photoURL: firebaseUser.photoURL || undefined,
+          email: profile?.email ?? email,
+          displayName: profile?.name ?? profile?.email ?? email,
+          name: profile?.name,
+          photoURL: profile?.photoURL ?? undefined,
           year: profile?.year,
           major: profile?.major,
         };
@@ -75,7 +76,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       isActive = false;
     };
   }, [firebaseUser, firebaseLoading]);
-// ...existing code...
 
   const ALLOWED_EMAIL_DOMAINS = ['u.northwestern.edu', 'northwestern.edu'];
 
@@ -98,18 +98,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       }
 
       // Set the current user with Firebase user data
-      const firebaseUserData = {
-        uid: result.user.uid,
-        email: result.user.email || '',
-        displayName: result.user.displayName || '',
-        photoURL: result.user.photoURL || undefined,
-      };
-
-      // Fetch profile if exists
       const profile = await getUserProfile(result.user.uid);
       const user: User = {
-        ...firebaseUserData,
-        name: profile?.name || firebaseUserData.displayName,
+        uid: result.user.uid,
+        email: profile?.email ?? email,
+        displayName: profile?.name ?? profile?.email ?? email,
+        name: profile?.name ?? undefined,
+        photoURL: profile?.photoURL ?? undefined,
         year: profile?.year,
         major: profile?.major,
       };

@@ -6,6 +6,7 @@ import {
   createOffer,
   getOfferByRequestAndHelper,
   getPendingNotifications,
+  updateRequestStatus,
 } from '../utilities/database';
 import type { Request, Notification } from '../types/index';
 import RequestForm from './RequestForm';
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const [success, setSuccess] = useState('');
   const [checkingOffer, setCheckingOffer] = useState<boolean>(false);
   const [alreadyOffered, setAlreadyOffered] = useState<boolean>(false);
+  const [showMyRequestsOnly, setShowMyRequestsOnly] = useState<boolean>(false);
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
@@ -149,6 +151,18 @@ export default function Dashboard() {
     }
   };
 
+  const handleCloseRequest = async (request: Request) => {
+    try {
+      await updateRequestStatus(request.requestID, 'closed');
+      setSuccess('Request closed successfully');
+      setTimeout(() => setSuccess(''), 3000);
+      await handleRefreshRequests();
+      setSelectedRequest(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to close request');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Welcome Popup */}
@@ -159,25 +173,35 @@ export default function Dashboard() {
               Welcome to Wildcat Mutual Aid!
             </h2>
             <div className="space-y-4 text-gray-700">
-              <p className="text-lg">
-                Here's how to use this platform:
-              </p>
+              <p className="text-lg">Here's how to use this platform:</p>
               <ul className="space-y-3 ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-purple-900 font-bold mt-1">+</span>
-                  <span>Click the <strong>+ button</strong> to create a new request for help</span>
+                  <span>
+                    Click the <strong>+ button</strong> to create a new request
+                    for help
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-900 font-bold mt-1">🔔</span>
-                  <span>Check the <strong>bell icon</strong> for notifications when someone offers to help you</span>
+                  <span>
+                    Check the <strong>bell icon</strong> for notifications when
+                    someone offers to help you
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-900 font-bold mt-1">👥</span>
-                  <span>Browse requests from other students and <strong>offer help</strong> by clicking on them</span>
+                  <span>
+                    Browse requests from other students and{' '}
+                    <strong>offer help</strong> by clicking on them
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-900 font-bold mt-1">✓</span>
-                  <span><strong>Accept or decline</strong> offers in your notifications to connect with helpers</span>
+                  <span>
+                    <strong>Accept or decline</strong> offers in your
+                    notifications to connect with helpers
+                  </span>
                 </li>
               </ul>
             </div>
@@ -302,12 +326,29 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Filter toggle */}
+        <div className="mb-4">
+          <button
+            className="bg-purple-700 text-white rounded-lg border px-2 py-1.5"
+            onClick={() => setShowMyRequestsOnly(!showMyRequestsOnly)}
+          >
+            {showMyRequestsOnly ? 'Show all requests' : 'Show only my requests'}
+          </button>
+        </div>
+
         {/* Request list or detail view */}
         {!selectedRequest ? (
           <div className="space-y-4">
-            {requests.length === 0 ? (
+            {requests.filter(
+              (request) =>
+                !showMyRequestsOnly || request.creatorID === currentUser?.uid
+            ).length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg shadow">
-                <p className="text-gray-500 mb-4">No requests yet</p>
+                <p className="text-gray-500 mb-4">
+                  {showMyRequestsOnly
+                    ? 'You have no requests yet'
+                    : 'No requests yet'}
+                </p>
                 <button
                   onClick={() => setShowRequestForm(true)}
                   className="bg-purple-900 text-white px-6 py-2 rounded-lg hover:bg-purple-800 transition-colors"
@@ -316,47 +357,49 @@ export default function Dashboard() {
                 </button>
               </div>
             ) : (
-              requests.map((request) => (
-                <div
-                  key={request.requestID}
-                  onClick={() => setSelectedRequest(request)}
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {request.title}
-                      </h3>
-                      <p className="text-gray-600 mt-2">
-                        {request.description}
-                      </p>
-                      <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
-                        <span>By {request.creatorName}</span>
-                        <span>
-                          {new Date(request.createdAt).toLocaleDateString()}
+              requests
+                .filter(
+                  (request) =>
+                    !showMyRequestsOnly ||
+                    request.creatorID === currentUser?.uid
+                )
+                .map((request) => (
+                  <div
+                    key={request.requestID}
+                    onClick={() => setSelectedRequest(request)}
+                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {request.title}
+                        </h3>
+                        <p className="text-gray-600 mt-2">
+                          {request.description}
+                        </p>
+                        <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
+                          <span>By {request.creatorName}</span>
+                          <span>
+                            {new Date(request.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            request.status === 'open'
+                              ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {request.status === 'open'
+                            ? 'Open'
+                              : 'Closed'}
                         </span>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                          request.status === 'open'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : request.status === 'accepted'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {request.status === 'open'
-                          ? 'Open'
-                          : request.status === 'accepted'
-                            ? 'Accepted'
-                            : 'Closed'}
-                      </span>
-                    </div>
                   </div>
-                </div>
-              ))
+                ))
             )}
           </div>
         ) : (
@@ -399,15 +442,11 @@ export default function Dashboard() {
                   className={`font-semibold ${
                     selectedRequest.status === 'open'
                       ? 'text-yellow-600'
-                      : selectedRequest.status === 'accepted'
-                        ? 'text-green-600'
                         : 'text-gray-600'
                   }`}
                 >
                   {selectedRequest.status === 'open'
                     ? 'Open'
-                    : selectedRequest.status === 'accepted'
-                      ? 'Accepted'
                       : 'Closed'}
                 </span>
               </p>
@@ -435,18 +474,23 @@ export default function Dashboard() {
                 </button>
               ))}
 
-            {selectedRequest.status === 'accepted' && (
-              <div className="bg-green-100 border border-green-400 text-green-700 p-4 rounded-lg">
-                <p className="font-semibold">This request has been accepted</p>
-              </div>
+            {currentUser?.uid === selectedRequest.creatorID && (
+              <>
+                {selectedRequest.status === 'open' && (
+                  <button
+                    onClick={() => handleCloseRequest(selectedRequest)}
+                    className="w-full bg-red-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                  >
+                    Close Request
+                  </button>
+                )}
+                {selectedRequest.status === 'closed' && (
+                  <div className="bg-gray-100 border border-gray-400 text-gray-700 p-4 rounded-lg">
+                    <p className="font-semibold">This request is closed</p>
+                  </div>
+                )}
+              </>
             )}
-
-            {currentUser?.uid === selectedRequest.creatorID &&
-              selectedRequest.status === 'closed' && (
-                <div className="bg-gray-100 border border-gray-400 text-gray-700 p-4 rounded-lg">
-                  <p className="font-semibold">This request is closed</p>
-                </div>
-              )}
           </div>
         )}
       </main>
