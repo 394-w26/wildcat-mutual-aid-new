@@ -89,6 +89,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const login = async () => {
     try {
       const googleProvider = new GoogleAuthProvider();
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
       const result = await signInWithPopup(auth, googleProvider);
 
       const email = result.user.email || '';
