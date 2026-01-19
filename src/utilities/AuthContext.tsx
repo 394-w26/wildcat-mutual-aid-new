@@ -10,7 +10,11 @@ interface AuthContextType {
   login: () => Promise<User | null>;
   logout: () => Promise<void>;
   isLoading: boolean;
-  updateProfile: (profile: { name: string; year: string; major: string }) => void;
+  updateProfile: (profile: {
+    name: string;
+    year: string;
+    major: string;
+  }) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,30 +36,65 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   // Sync Firebase auth state with currentUser
   useEffect(() => {
+    let isActive = true;
     const syncUser = async () => {
-      if (firebaseUser) {
+      setIsLoading(true);
+      try {
+        if (!firebaseUser) {
+          if (isActive) setCurrentUser(null);
+          return;
+        }
+
+        const email = firebaseUser.email || '';
+        if (!isAllowedEmail(email)) {
+          await signOut(auth);
+          if (isActive) setCurrentUser(null);
+          return;
+        }
+
         const profile = await getUserProfile(firebaseUser.uid);
         const user: User = {
           uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
+          email,
           displayName: firebaseUser.displayName || '',
           photoURL: firebaseUser.photoURL || undefined,
           year: profile?.year,
           major: profile?.major,
         };
-        setCurrentUser(user);
-      } else {
-        setCurrentUser(null);
+        if (isActive) setCurrentUser(user);
+      } catch (error) {
+        console.error('Failed to sync user', error);
+        if (isActive) setCurrentUser(null);
+      } finally {
+        if (isActive) setIsLoading(firebaseLoading);
       }
-      setIsLoading(firebaseLoading);
     };
     syncUser();
+    return () => {
+      isActive = false;
+    };
   }, [firebaseUser, firebaseLoading]);
+// ...existing code...
+
+  const ALLOWED_EMAIL_DOMAINS = ['u.northwestern.edu', 'northwestern.edu'];
+
+  const isAllowedEmail = (email?: string) => {
+    if (!email) return false;
+    return ALLOWED_EMAIL_DOMAINS.some((domain) =>
+      email.toLowerCase().endsWith(`@${domain}`)
+    );
+  };
 
   const login = async () => {
     try {
       const googleProvider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, googleProvider);
+
+      const email = result.user.email || '';
+      if (!isAllowedEmail(email)) {
+        await signOut(auth);
+        throw new Error('Please sign in with a Northwestern email address.');
+      }
 
       // Set the current user with Firebase user data
       const firebaseUserData = {
@@ -78,11 +117,15 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       return user;
     } catch (err) {
       console.error('error signing in');
-      return null;
+      throw err instanceof Error ? err : new Error('Login failed');
     }
   };
 
-  const updateProfile = (profile: { name: string; year: string; major: string }) => {
+  const updateProfile = (profile: {
+    name: string;
+    year: string;
+    major: string;
+  }) => {
     if (currentUser) {
       setCurrentUser({ ...currentUser, ...profile });
     }
