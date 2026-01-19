@@ -37,16 +37,16 @@ export default function AuthPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-purple-900">Wildcat Mutual Aid</h1>
           <p className="text-sm text-gray-600 mt-2">Northwestern University</p>
+          <p className="text-base text-gray-700 mt-3">Request help, offer help, all at Northwestern</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-2 p-4 bg-red-100 border border-red-400 text-red-700 rounded text-center">
             {error}
           </div>
         )}
 
-        <div className="space-y-4">
-          <p className="text-center text-gray-600">Sign in with your Google account to continue</p>
+        <div className="space-y-2">
           
           <button
             onClick={handleGoogleLogin}

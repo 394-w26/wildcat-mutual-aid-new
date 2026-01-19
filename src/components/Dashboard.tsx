@@ -9,7 +9,6 @@ import {
 } from '../utilities/database';
 import type { Request, Notification } from '../types/index';
 import RequestForm from './RequestForm';
-import NotificationCenter from './NotificationCenter';
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -23,7 +22,7 @@ export default function Dashboard() {
     }
   }, [currentUser, navigate]);
   const [showRequestForm, setShowRequestForm] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [requests, setRequests] = useState<Request[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
@@ -31,6 +30,18 @@ export default function Dashboard() {
   const [success, setSuccess] = useState('');
   const [checkingOffer, setCheckingOffer] = useState<boolean>(false);
   const [alreadyOffered, setAlreadyOffered] = useState<boolean>(false);
+
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+    }
+  }, []);
+
+  const handleCloseWelcome = () => {
+    setShowWelcome(false);
+    localStorage.setItem('hasSeenWelcome', 'true');
+  };
 
   useEffect(() => {
     const checkOffer = async () => {
@@ -140,6 +151,45 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Welcome Popup */}
+      {showWelcome && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-8">
+            <h2 className="text-3xl font-bold text-purple-900 mb-4 text-center">
+              Welcome to Wildcat Mutual Aid!
+            </h2>
+            <div className="space-y-4 text-gray-700">
+              <p className="text-lg">
+                Here's how to use this platform:
+              </p>
+              <ul className="space-y-3 ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-900 font-bold mt-1">+</span>
+                  <span>Click the <strong>+ button</strong> to create a new request for help</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-900 font-bold mt-1">🔔</span>
+                  <span>Check the <strong>bell icon</strong> for notifications when someone offers to help you</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-900 font-bold mt-1">👥</span>
+                  <span>Browse requests from other students and <strong>offer help</strong> by clicking on them</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-900 font-bold mt-1">✓</span>
+                  <span><strong>Accept or decline</strong> offers in your notifications to connect with helpers</span>
+                </li>
+              </ul>
+            </div>
+            <button
+              onClick={handleCloseWelcome}
+              className="w-full mt-6 bg-purple-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-purple-800 transition-colors"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-gradient-to-r from-purple-900 to-purple-700 shadow-lg">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
@@ -159,7 +209,7 @@ export default function Dashboard() {
             </button>
             <div className="relative">
               <button
-                onClick={() => setShowNotifications(true)}
+                onClick={() => navigate('/notifications')}
                 className="bg-white text-purple-900 w-10 h-10 rounded-full hover:bg-purple-100 transition-colors flex items-center justify-center"
                 title="Notifications"
               >
@@ -211,6 +261,13 @@ export default function Dashboard() {
                   </svg>
                 </div>
               )}
+            </button>
+            <button
+              onClick={() => setShowWelcome(true)}
+              className="bg-white text-purple-900 w-10 h-10 rounded-full hover:bg-purple-100 transition-colors flex items-center justify-center font-bold text-xl"
+              title="Help"
+            >
+              ?
             </button>
             <button
               onClick={logout}
@@ -402,14 +459,6 @@ export default function Dashboard() {
             handleRefreshRequests();
             setError('');
           }}
-        />
-      )}
-
-      {showNotifications && (
-        <NotificationCenter
-          notifications={notifications}
-          onClose={() => setShowNotifications(false)}
-          refreshNotifications={refreshNotifications}
         />
       )}
     </div>

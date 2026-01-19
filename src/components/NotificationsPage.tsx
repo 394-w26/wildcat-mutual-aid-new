@@ -1,27 +1,63 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../utilities/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import type { Notification, Request } from '../types/index';
 import {
   updateRequestStatus,
   getRequest,
   updateOfferStatus,
+  getPendingNotifications,
 } from '../utilities/database';
 
-interface NotificationCenterProps {
-  notifications: Notification[];
-  onClose: () => void;
-  refreshNotifications: () => void;
-}
-
-export default function NotificationCenter({
-  notifications,
-  onClose,
-  refreshNotifications,
-}: NotificationCenterProps) {
+export default function NotificationsPage() {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [requestsMap, setRequestsMap] = useState<Record<string, Request>>({});
   const [acceptedNotifications, setAcceptedNotifications] = useState<
     Set<string>
   >(new Set());
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/');
+    } else if (!currentUser.year || !currentUser.major) {
+      navigate('/create-profile');
+    }
+  }, [currentUser, navigate]);
+
+  const refreshNotifications = async () => {
+    if (currentUser) {
+      try {
+        const pendingOffers = await getPendingNotifications(currentUser.uid);
+        const notificationsToDisplay: Notification[] = pendingOffers.map(
+          (offer) => ({
+            notificationID: `${offer.requestID}_${offer.offerID}`,
+            userID: currentUser.uid,
+            offerID: offer.offerID,
+            requestID: offer.requestID,
+            helperID: offer.helperID,
+            helperName: offer.helperName,
+            helperEmail: offer.helperEmail,
+            helperYear: offer.helperYear,
+            helperMajor: offer.helperMajor,
+            helperPhotoURL: offer.helperPhotoURL,
+            status: offer.status as 'pending' | 'accepted',
+            createdAt: offer.createdAt,
+            read: false,
+          })
+        );
+        setNotifications(notificationsToDisplay);
+      } catch (err) {
+        console.error('Error refreshing notifications:', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    refreshNotifications();
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -41,7 +77,6 @@ export default function NotificationCenter({
 
   const handleAcceptOffer = async (notification: Notification) => {
     try {
-      // Update the offer and request status in the database
       await updateOfferStatus(
         notification.requestID,
         notification.offerID,
@@ -49,7 +84,6 @@ export default function NotificationCenter({
       );
       await updateRequestStatus(notification.requestID, 'accepted');
 
-      // Update local state to immediately show as accepted
       setAcceptedNotifications((prev) =>
         new Set(prev).add(notification.notificationID)
       );
@@ -73,20 +107,28 @@ export default function NotificationCenter({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 max-h-96 overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-purple-900 to-purple-700 shadow-lg">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              Wildcat Mutual Aid
+            </h1>
+            <p className="text-xs text-purple-200">Northwestern University</p>
+          </div>
           <button
-            onClick={() => {
-              refreshNotifications();
-              onClose();
-            }}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
+            onClick={() => navigate('/dashboard')}
+            className="bg-white text-purple-900 px-4 py-2 rounded-lg hover:bg-purple-100 transition-colors font-semibold"
           >
-            ×
+            Back to Dashboard
           </button>
         </div>
+      </header>
+
+      {/* Main content */}
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6">Notifications</h2>
 
         {error && (
           <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -95,7 +137,9 @@ export default function NotificationCenter({
         )}
 
         {notifications.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No notifications yet</p>
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <p className="text-gray-500 text-lg">No notifications yet</p>
+          </div>
         ) : (
           <div className="space-y-4">
             {notifications.map((notification) => {
@@ -109,9 +153,9 @@ export default function NotificationCenter({
               return (
                 <div
                   key={notification.notificationID}
-                  className={`p-4 border rounded-lg ${
+                  className={`bg-white p-6 border rounded-lg shadow-sm ${
                     notification.read
-                      ? 'border-gray-200 bg-white'
+                      ? 'border-gray-200'
                       : 'border-purple-300 bg-purple-50'
                   }`}
                 >
@@ -207,7 +251,7 @@ export default function NotificationCenter({
             })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
