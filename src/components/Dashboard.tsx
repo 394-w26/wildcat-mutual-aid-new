@@ -123,7 +123,10 @@ export default function Dashboard() {
         request.requestID,
         currentUser.uid,
         currentUser.email,
-        currentUser.displayName
+        currentUser.displayName,
+        currentUser.year,
+        currentUser.major,
+        currentUser.photoURL || ''
       );
 
       setSuccess(`Offer sent to ${request.creatorName}!`);
