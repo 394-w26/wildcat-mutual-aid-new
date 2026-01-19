@@ -108,7 +108,16 @@ export async function createProfile(uid: string, name: string, year: string, maj
     email,
   });
 }
-// ============ Offers ============
+
+export async function updateProfile(uid: string, name: string, year: string, major: string, photoURL: string): Promise<void> {
+  const firestore = getFirestore();
+  await updateDoc(doc(collection(firestore, 'profiles'), uid), {
+    name,
+    year,
+    major,
+    photoURL,
+  });
+}
 
 export const createOffer = async (
   requestID: string,
