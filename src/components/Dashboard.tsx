@@ -170,7 +170,7 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-8">
             <h2 className="text-3xl font-bold text-purple-900 mb-4 text-center">
-              Welcome to Wildcat Mutual Aid!
+              Welcome to Wildcat Help!
             </h2>
             <div className="space-y-4 text-gray-700">
               <p className="text-lg">Here's how to use this platform:</p>
@@ -219,17 +219,29 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-white">
-              Wildcat Mutual Aid
+              Wildcat Help
             </h1>
             <p className="text-xs text-purple-200">Northwestern University</p>
           </div>
           <div className="flex gap-4 items-center">
             <button
               onClick={() => setShowRequestForm(true)}
-              className="bg-white text-purple-900 w-10 h-10 rounded-full hover:bg-purple-100 transition-colors flex items-center justify-center"
+              className="bg-white w-10 h-10 rounded-full hover:bg-purple-100 transition-colors flex items-center justify-center"
               title="Create request"
             >
-              <span className="text-2xl font-bold leading-none">+</span>
+              <svg
+                className="w-5 h-5 text-purple-900"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
             <div className="relative">
               <button
@@ -257,6 +269,14 @@ export default function Dashboard() {
                 )}
               </button>
             </div>
+
+            <button
+              onClick={() => setShowWelcome(true)}
+              className="bg-white text-purple-900 w-10 h-10 rounded-full hover:bg-purple-100 transition-colors flex items-center justify-center font-bold text-xl"
+              title="Help"
+            >
+              ?
+            </button>
             <button
               onClick={() => navigate('/profile-settings')}
               className="bg-white text-purple-900 w-10 h-10 rounded-full hover:bg-purple-100 transition-colors"
@@ -285,13 +305,6 @@ export default function Dashboard() {
                   </svg>
                 </div>
               )}
-            </button>
-            <button
-              onClick={() => setShowWelcome(true)}
-              className="bg-white text-purple-900 w-10 h-10 rounded-full hover:bg-purple-100 transition-colors flex items-center justify-center font-bold text-xl"
-              title="Help"
-            >
-              ?
             </button>
             <button
               onClick={logout}
@@ -389,12 +402,10 @@ export default function Dashboard() {
                           className={`px-3 py-1 rounded-full text-sm font-semibold ${
                             request.status === 'open'
                               ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
+                              : 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {request.status === 'open'
-                            ? 'Open'
-                              : 'Closed'}
+                          {request.status === 'open' ? 'Open' : 'Closed'}
                         </span>
                       </div>
                     </div>
@@ -442,12 +453,10 @@ export default function Dashboard() {
                   className={`font-semibold ${
                     selectedRequest.status === 'open'
                       ? 'text-yellow-600'
-                        : 'text-gray-600'
+                      : 'text-gray-600'
                   }`}
                 >
-                  {selectedRequest.status === 'open'
-                    ? 'Open'
-                      : 'Closed'}
+                  {selectedRequest.status === 'open' ? 'Open' : 'Closed'}
                 </span>
               </p>
               <p className="text-sm text-gray-600">

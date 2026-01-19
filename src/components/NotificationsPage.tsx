@@ -110,7 +110,7 @@ export default function NotificationsPage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-white">
-              Wildcat Mutual Aid
+              Wildcat Help
             </h1>
             <p className="text-xs text-purple-200">Northwestern University</p>
           </div>

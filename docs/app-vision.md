@@ -1,6 +1,6 @@
 # Name
 
-- The app is called Wildcat Mutual Aid.
+- The app is called Wildcat Help.
 
 # Users
 
@@ -27,10 +27,10 @@ Simple mobile-friendly one-screen design with the app name at the top, and below
 Here is an example session.
 
 - Alice is a sophomore who just arrived back on campus after winter break and does not own a car.
-- Alice needs a ride to HMart to get groceries, so she posts a request on the Wildcat Mutual Aid app to see if anyone has a car to take her.
-- Beatrice is a junior who owns a car and is about to restock her groceries for her apartment. Looking at the dashboard on the Wildcat Mutual Aid app, she notices that Alice requested a ride to HMart. 
+- Alice needs a ride to HMart to get groceries, so she posts a request on the Wildcat Help app to see if anyone has a car to take her.
+- Beatrice is a junior who owns a car and is about to restock her groceries for her apartment. Looking at the dashboard on the Wildcat Help app, she notices that Alice requested a ride to HMart. 
 - Beatrice clicks the offer help button on Alice's request.
-- Alice gets a notification from the Wildcat Mutual Aid app and clicks the bell icon to see what is it.
+- Alice gets a notification from the Wildcat Help app and clicks the bell icon to see what is it.
 - Alice clicks on the notification and sees Beatrice's profile and that she offered help. Alice clicks accept and is shown Beatrice's email so she can contact Beatrice. 
 
 # Coding notes

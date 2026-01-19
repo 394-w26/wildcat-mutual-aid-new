@@ -35,7 +35,7 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-700 to-purple-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-purple-900">Wildcat Mutual Aid</h1>
+          <h1 className="text-4xl font-bold text-purple-900">Wildcat Help</h1>
           <p className="text-sm text-gray-600 mt-2">Northwestern University</p>
           <p className="text-base text-gray-700 mt-3">Request help, offer help, all at Northwestern</p>
         </div>
