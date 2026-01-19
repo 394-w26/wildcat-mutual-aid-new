@@ -94,6 +94,7 @@ export const notificationSchema = z.object({
   helperName: z.string(),
   helperEmail: z.string(),
   helperYear: z.string(),
+  helperPhotoURL: z.string(),
   helperMajor: z.string(),
   status: z.enum(['pending', 'accepted', 'declined']),
   createdAt: z.number(),

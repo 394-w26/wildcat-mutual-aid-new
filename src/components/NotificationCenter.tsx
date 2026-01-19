@@ -116,15 +116,22 @@ export default function NotificationCenter({
                   }`}
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {notification.helperName} offered help
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {effectiveStatus === 'pending'
-                          ? 'Waiting for your response'
-                          : 'You accepted this offer'}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={notification.helperPhotoURL}
+                        alt={notification.helperName}
+                        className="w-12 h-12 rounded-full"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {notification.helperName} offered help
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {effectiveStatus === 'pending'
+                            ? 'Waiting for your response'
+                            : 'You accepted this offer'}
+                        </p>
+                      </div>
                     </div>
                     {effectiveStatus === 'accepted' && (
                       <div className="bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-semibold">
