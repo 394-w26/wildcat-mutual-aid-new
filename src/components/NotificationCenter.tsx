@@ -1,26 +1,27 @@
-import { useState, useEffect } from "react";
-import type { Notification, Request } from "../types/index";
+import { useState, useEffect } from 'react';
+import type { Notification, Request } from '../types/index';
 import {
   updateRequestStatus,
   getRequest,
   updateOfferStatus,
-} from "../utilities/database";
+} from '../utilities/database';
 
 interface NotificationCenterProps {
   notifications: Notification[];
-  setNotifications: (notifications: Notification[]) => void;
   onClose: () => void;
-  onNotificationUpdate: () => void;
+  refreshNotifications: () => void;
 }
 
 export default function NotificationCenter({
   notifications,
   onClose,
-  onNotificationUpdate,
-  setNotifications,
+  refreshNotifications,
 }: NotificationCenterProps) {
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [requestsMap, setRequestsMap] = useState<Record<string, Request>>({});
+  const [acceptedNotifications, setAcceptedNotifications] = useState<
+    Set<string>
+  >(new Set());
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -44,35 +45,30 @@ export default function NotificationCenter({
       await updateOfferStatus(
         notification.requestID,
         notification.offerID,
-        "accepted"
+        'accepted'
       );
-      await updateRequestStatus(notification.requestID, "accepted");
+      await updateRequestStatus(notification.requestID, 'accepted');
 
-      // Update the notification status to 'accepted' in the notifications array
-      const updatedNotifications = notifications.map((n) =>
-        n.notificationID === notification.notificationID
-          ? { ...n, status: "accepted" }
-          : n
+      // Update local state to immediately show as accepted
+      setAcceptedNotifications((prev) =>
+        new Set(prev).add(notification.notificationID)
       );
-
-      // Update the state to reflect the changes in the UI
-      setNotifications(updatedNotifications as Notification[]);
-      onNotificationUpdate(); // Trigger any external updates if necessary
+      setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to accept offer");
+      setError(err instanceof Error ? err.message : 'Failed to accept offer');
     }
   };
 
   const handleDeclineOffer = async (notification: Notification) => {
     try {
-      // Remove the declined notification from the list
-      const updatedNotifications = notifications.filter(
-        (n) => n.notificationID !== notification.notificationID
+      await updateOfferStatus(
+        notification.requestID,
+        notification.offerID,
+        'declined'
       );
-      setNotifications(updatedNotifications);
-      onNotificationUpdate();
+      refreshNotifications();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to decline offer");
+      setError(err instanceof Error ? err.message : 'Failed to decline offer');
     }
   };
 
@@ -82,7 +78,10 @@ export default function NotificationCenter({
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
           <button
-            onClick={onClose}
+            onClick={() => {
+              refreshNotifications();
+              onClose();
+            }}
             className="text-gray-500 hover:text-gray-700 text-2xl"
           >
             ×
@@ -101,13 +100,19 @@ export default function NotificationCenter({
           <div className="space-y-4">
             {notifications.map((notification) => {
               const request = requestsMap[notification.requestID];
+              const effectiveStatus = acceptedNotifications.has(
+                notification.notificationID
+              )
+                ? 'accepted'
+                : notification.status;
+
               return (
                 <div
                   key={notification.notificationID}
                   className={`p-4 border rounded-lg ${
                     notification.read
-                      ? "border-gray-200 bg-white"
-                      : "border-purple-300 bg-purple-50"
+                      ? 'border-gray-200 bg-white'
+                      : 'border-purple-300 bg-purple-50'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-3">
@@ -116,12 +121,12 @@ export default function NotificationCenter({
                         {notification.helperName} offered help
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">
-                        {notification.status === "pending"
-                          ? "Waiting for your response"
-                          : "You accepted this offer"}
+                        {effectiveStatus === 'pending'
+                          ? 'Waiting for your response'
+                          : 'You accepted this offer'}
                       </p>
                     </div>
-                    {notification.status === "accepted" && (
+                    {effectiveStatus === 'accepted' && (
                       <div className="bg-green-100 text-green-800 px-3 py-1 rounded text-sm font-semibold">
                         ✓ Accepted
                       </div>
@@ -144,20 +149,20 @@ export default function NotificationCenter({
                       Helper Profile
                     </p>
                     <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Name:</span>{" "}
+                      <span className="font-semibold">Name:</span>{' '}
                       {notification.helperName}
                     </p>
                     <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Year:</span>{" "}
+                      <span className="font-semibold">Year:</span>{' '}
                       {notification.helperYear}
                     </p>
                     <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Major:</span>{" "}
+                      <span className="font-semibold">Major:</span>{' '}
                       {notification.helperMajor}
                     </p>
                   </div>
 
-                  {notification.status === "pending" && (
+                  {effectiveStatus === 'pending' && (
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => handleAcceptOffer(notification)}
@@ -174,13 +179,13 @@ export default function NotificationCenter({
                     </div>
                   )}
 
-                  {notification.status === "accepted" && (
+                  {effectiveStatus === 'accepted' && (
                     <div className="bg-green-100 border border-green-400 text-green-800 p-3 rounded-lg mt-3">
                       <p className="text-sm font-semibold">
                         Contact Information
                       </p>
                       <p className="text-sm mt-1">
-                        <span className="font-semibold">Email:</span>{" "}
+                        <span className="font-semibold">Email:</span>{' '}
                         <span className="font-mono">
                           {notification.helperEmail}
                         </span>

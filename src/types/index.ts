@@ -72,7 +72,7 @@ export const offerSchema = z.object({
   offerID: z.string(),
   requestID: z.string(),
   helperID: z.string(),
-  status: z.enum(['pending', 'accepted']),
+  status: z.enum(['pending', 'accepted', 'declined']),
   createdAt: z.number(),
   helperEmail: z.string(),
   helperName: z.string(),
@@ -91,7 +91,7 @@ export const notificationSchema = z.object({
   helperEmail: z.string(),
   helperYear: z.string(),
   helperMajor: z.string(),
-  status: z.enum(['pending', 'accepted']),
+  status: z.enum(['pending', 'accepted', 'declined']),
   createdAt: z.number(),
   read: z.boolean(),
 });

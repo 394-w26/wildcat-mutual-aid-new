@@ -1,5 +1,5 @@
 import type { Request, Offer } from '../types/index';
-import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, setDoc, addDoc, query, where, getDocs, orderBy, updateDoc } from 'firebase/firestore';
 import { db } from "../lib/firebase";
 
 
@@ -183,7 +183,7 @@ export const getOffersByHelper = async (helperID: string): Promise<Offer[]> => {
 export const updateOfferStatus = async (
   requestID: string,
   offerID: string,
-  status: 'pending' | 'accepted'
+  status: 'pending' | 'accepted' | 'declined'
 ): Promise<void> => {
   const docRef = doc(db, 'requests', requestID, 'offers', offerID);
   await updateDoc(docRef, { status });

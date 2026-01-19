@@ -55,12 +55,12 @@ export default function Dashboard() {
     checkOffer();
   }, [selectedRequest, currentUser]);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (currentUser) {
-        try {
-          const pendingOffers = await getPendingNotifications(currentUser.uid);
-          const notificationsToDisplay: Notification[] = pendingOffers.map((offer) => ({
+  const refreshNotifications = useCallback(async () => {
+    if (currentUser) {
+      try {
+        const pendingOffers = await getPendingNotifications(currentUser.uid);
+        const notificationsToDisplay: Notification[] = pendingOffers.map(
+          (offer) => ({
             notificationID: `${offer.requestID}_${offer.offerID}`,
             userID: currentUser.uid,
             offerID: offer.offerID,
@@ -73,17 +73,23 @@ export default function Dashboard() {
             status: offer.status as 'pending' | 'accepted',
             createdAt: offer.createdAt,
             read: false,
-          }));
-          setNotifications(notificationsToDisplay);
-        } catch (err) {
-          console.error('Error fetching notifications:', err);
-        }
+          })
+        );
+        setNotifications(notificationsToDisplay);
+      } catch (err) {
+        console.error('Error refreshing notifications:', err);
       }
-    };
-    fetchNotifications();
+    }
   }, [currentUser]);
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  useEffect(() => {
+    refreshNotifications();
+  }, []);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
 
   const handleRefreshRequests = useCallback(async () => {
     const getAll = async () => {
@@ -102,32 +108,6 @@ export default function Dashboard() {
     handleRefreshRequests();
   }, []);
 
-
-  const handleRefreshNotifications = useCallback(async () => {
-    if (currentUser) {
-      try {
-        const pendingOffers = await getPendingNotifications(currentUser.uid);
-        const notificationsToDisplay: Notification[] = pendingOffers.map((offer) => ({
-          notificationID: `${offer.requestID}_${offer.offerID}`,
-          userID: currentUser.uid,
-          offerID: offer.offerID,
-          requestID: offer.requestID,
-          helperID: offer.helperID,
-          helperName: offer.helperName,
-          helperEmail: offer.helperEmail,
-          helperYear: '',
-          helperMajor: '',
-          status: offer.status as 'pending' | 'accepted',
-          createdAt: offer.createdAt,
-          read: false,
-        }));
-        setNotifications(notificationsToDisplay);
-      } catch (err) {
-        console.error('Error refreshing notifications:', err);
-      }
-    }
-  }, [currentUser]);
-
   const handleOfferHelp = async (request: Request) => {
     if (
       !currentUser ||
@@ -139,7 +119,7 @@ export default function Dashboard() {
       return;
 
     try {
-      const offer = await createOffer(
+      await createOffer(
         request.requestID,
         currentUser.uid,
         currentUser.email,
@@ -394,10 +374,9 @@ export default function Dashboard() {
 
       {showNotifications && (
         <NotificationCenter
-          setNotifications = {setNotifications}
           notifications={notifications}
           onClose={() => setShowNotifications(false)}
-          onNotificationUpdate={handleRefreshNotifications}
+          refreshNotifications={refreshNotifications}
         />
       )}
     </div>
