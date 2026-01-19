@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../utilities/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { createProfile } from '../utilities/database';
+import { uploadProfilePhoto } from '../utilities/storage';
 
 export default function CreateProfile() {
   const [name, setName] = useState('');
@@ -10,6 +11,8 @@ export default function CreateProfile() {
   const [photoURL, setPhotoURL] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(false);
   const { currentUser, updateProfile } = useAuth();
   const navigate = useNavigate();
 
@@ -35,13 +38,31 @@ export default function CreateProfile() {
     setError(null);
     setIsLoading(true);
     try {
-      await createProfile(currentUser.uid, name, year, major, currentUser.email || '', photoURL);
-      updateProfile({ name, year, major, photoURL });
+      let finalPhotoURL = photoURL;
+      if (selectedFile) {
+        setUploadProgress(true);
+        finalPhotoURL = await uploadProfilePhoto(currentUser.uid, selectedFile);
+        setUploadProgress(false);
+      }
+      await createProfile(currentUser.uid, name, year, major, currentUser.email || '', finalPhotoURL);
+      updateProfile({ name, year, major, photoURL: finalPhotoURL });
       navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create profile');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPhotoURL(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -56,6 +77,12 @@ export default function CreateProfile() {
         {error && (
           <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
+          </div>
+        )}
+
+        {photoURL && (
+          <div className="mb-6 flex justify-center">
+            <img src={photoURL} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-purple-600" />
           </div>
         )}
 
@@ -99,12 +126,28 @@ export default function CreateProfile() {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
+          <div>
+            <label htmlFor="photo" className="block text-sm font-medium text-gray-700">Profile Photo</label>
+            <input
+              type="file"
+              id="photo"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+              disabled={uploadProgress}
+              className="mt-1 block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-purple-50 file:text-purple-700
+                hover:file:bg-purple-100"
+            />
+          </div>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || uploadProgress}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
           >
-            {isLoading ? 'Creating...' : 'Create Profile'}
+            {uploadProgress ? 'Uploading photo...' : isLoading ? 'Creating...' : 'Create Profile'}
           </button>
         </form>
       </div>
