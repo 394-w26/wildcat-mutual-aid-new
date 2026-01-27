@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           email: profile?.email ?? email,
           displayName: profile?.name ?? profile?.email ?? email,
           name: profile?.name,
-          photoURL: profile?.photoURL ?? undefined,
+          photoURL: profile?.photoURL ?? firebaseUser.photoURL ?? undefined,
           year: profile?.year,
           major: profile?.major,
         };
@@ -105,9 +105,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       const user: User = {
         uid: result.user.uid,
         email: profile?.email ?? email,
-        displayName: profile?.name ?? profile?.email ?? email,
-        name: profile?.name ?? undefined,
-        photoURL: profile?.photoURL ?? undefined,
+        displayName: profile?.name ?? undefined,
+        photoURL: profile?.photoURL ?? result.user.photoURL ?? undefined,
         year: profile?.year,
         major: profile?.major,
       };
@@ -127,7 +126,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     photoURL: string;
   }) => {
     if (currentUser) {
-      setCurrentUser({ ...currentUser, ...profile });
+      setCurrentUser({ ...currentUser, ...profile, displayName: profile.name });
     }
   };
 

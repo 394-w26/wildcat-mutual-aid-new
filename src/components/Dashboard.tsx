@@ -98,7 +98,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     refreshNotifications();
-  }, []);
+    // Refresh notifications every 5 seconds
+    const notificationInterval = setInterval(refreshNotifications, 5000);
+    return () => clearInterval(notificationInterval);
+  }, [refreshNotifications]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -120,7 +123,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     handleRefreshRequests();
-  }, []);
+    // Refresh requests every 5 seconds
+    const requestInterval = setInterval(handleRefreshRequests, 5000);
+    return () => clearInterval(requestInterval);
+  }, [handleRefreshRequests]);
 
   const handleOfferHelp = async (request: Request) => {
     if (
@@ -339,15 +345,17 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Filter toggle */}
-        <div className="mb-4">
-          <button
-            className="bg-purple-700 text-white rounded-lg border px-2 py-1.5"
-            onClick={() => setShowMyRequestsOnly(!showMyRequestsOnly)}
-          >
-            {showMyRequestsOnly ? 'Show all requests' : 'Show only my requests'}
-          </button>
-        </div>
+        {/* Filter toggle - only show when not viewing a specific request */}
+        {!selectedRequest && (
+          <div className="mb-4">
+            <button
+              className="bg-purple-700 text-white rounded-lg border px-2 py-1.5"
+              onClick={() => setShowMyRequestsOnly(!showMyRequestsOnly)}
+            >
+              {showMyRequestsOnly ? 'Show all requests' : 'Show only my requests'}
+            </button>
+          </div>
+        )}
 
         {/* Request list or detail view */}
         {!selectedRequest ? (
@@ -359,14 +367,14 @@ export default function Dashboard() {
               <div className="text-center py-12 bg-white rounded-lg shadow">
                 <p className="text-gray-500 mb-4">
                   {showMyRequestsOnly
-                    ? 'You have no requests yet'
+                    ? 'You do not have any requests'
                     : 'No requests yet'}
                 </p>
                 <button
                   onClick={() => setShowRequestForm(true)}
                   className="bg-purple-900 text-white px-6 py-2 rounded-lg hover:bg-purple-800 transition-colors"
                 >
-                  Create the first request
+                  {showMyRequestsOnly ? 'Create a request here' : 'Create the first request'}
                 </button>
               </div>
             ) : (
