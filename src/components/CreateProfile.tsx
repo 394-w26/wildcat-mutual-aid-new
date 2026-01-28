@@ -185,22 +185,20 @@ export default function CreateProfile() {
               <label htmlFor="year" className="block text-sm font-semibold text-gray-700 mb-2">
                 Year
               </label>
-              <div className="grid grid-cols-5 gap-2">
-                {['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'].map((y) => (
-                  <button
-                    key={y}
-                    type="button"
-                    onClick={() => setYear(y)}
-                    className={`py-2.5 px-1 rounded-xl border-2 text-xs font-medium transition-all ${
-                      year === y
-                        ? 'border-purple-600 bg-purple-50 text-purple-900'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {y.slice(0, 4)}{y.length > 4 ? '.' : ''}
-                  </button>
-                ))}
-              </div>
+              <select
+                id="year"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white"
+              >
+                <option value="">Select your year</option>
+                <option value="Freshman">Freshman</option>
+                <option value="Sophomore">Sophomore</option>
+                <option value="Junior">Junior</option>
+                <option value="Senior">Senior</option>
+                <option value="Graduate">Graduate</option>
+              </select>
             </div>
 
             {/* Major with autocomplete */}
