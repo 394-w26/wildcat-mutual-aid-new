@@ -12,10 +12,10 @@ export const createRequest = async (
   creatorEmail: string,
   creatorName: string,
   creatorYear: string,
-  creatorMajor: string
+  creatorMajor: string,
+  category: string = 'other'
 ): Promise<Request> => {
-    console.log("creating request...")
-  const request: Omit<Request, 'requestID'> = {
+  const request: Omit<Request, 'requestID'> & { category: string } = {
     title,
     description,
     creatorID,
@@ -25,10 +25,10 @@ export const createRequest = async (
     creatorName,
     creatorYear,
     creatorMajor,
+    category,
   };
   
   const docRef = await addDoc(collection(db, 'requests'), request);
-  console.log(docRef)
   
   return {
     ...request,

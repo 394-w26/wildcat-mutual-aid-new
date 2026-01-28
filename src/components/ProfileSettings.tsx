@@ -3,6 +3,31 @@ import { useAuth } from '../utilities/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getUserProfile, updateProfile } from '../utilities/database';
 import { uploadProfilePhoto } from '../utilities/storage';
+import Layout from './Layout';
+
+// Common Northwestern majors for autocomplete
+const COMMON_MAJORS = [
+  'Computer Science',
+  'Economics',
+  'Psychology',
+  'Biology',
+  'Political Science',
+  'Communication Studies',
+  'Journalism',
+  'Engineering',
+  'Mathematics',
+  'Chemistry',
+  'Physics',
+  'History',
+  'English',
+  'Sociology',
+  'Neuroscience',
+  'Business',
+  'Art History',
+  'Music',
+  'Theatre',
+  'Philosophy',
+];
 
 export default function ProfileSettings() {
   const [name, setName] = useState('');
@@ -10,9 +35,11 @@ export default function ProfileSettings() {
   const [major, setMajor] = useState('');
   const [photoURL, setPhotoURL] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(false);
+  const [showMajorSuggestions, setShowMajorSuggestions] = useState(false);
   const { currentUser, updateProfile: updateAuthProfile } = useAuth();
   const navigate = useNavigate();
 
@@ -44,6 +71,7 @@ export default function ProfileSettings() {
     e.preventDefault();
     if (!currentUser) return;
     setError(null);
+    setSuccess(null);
     setIsLoading(true);
     try {
       let finalPhotoURL = photoURL;
@@ -54,7 +82,8 @@ export default function ProfileSettings() {
       }
       await updateProfile(currentUser.uid, name, year, major, finalPhotoURL);
       updateAuthProfile({ name, year, major, photoURL: finalPhotoURL });
-      navigate('/dashboard');
+      setSuccess('Profile updated successfully!');
+      setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
       console.error('Error updating profile:', err);
       setError('Failed to update profile');
@@ -75,100 +104,183 @@ export default function ProfileSettings() {
     }
   };
 
+  const filteredMajors = COMMON_MAJORS.filter(m =>
+    m.toLowerCase().includes(major.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-700 to-purple-600 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-purple-900">Profile Settings</h1>
-          <p className="text-sm text-gray-600 mt-2">Update your profile information</p>
+    <Layout>
+      <div className="max-w-md mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Profile Settings</h2>
+          <p className="text-gray-600 mt-1">Update your information</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3">
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {error}
+            <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
 
-        {photoURL && (
-          <div className="mb-6 flex justify-center">
-            <img src={photoURL} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-purple-600" />
+        {success && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-3">
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {success}
+            <button onClick={() => setSuccess(null)} className="ml-auto text-green-500 hover:text-green-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-            />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {/* Profile Photo */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative group">
+              {photoURL ? (
+                <img
+                  src={photoURL}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-purple-100"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              )}
+              <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileChange}
+                  disabled={uploadProgress}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">Click to change photo</p>
           </div>
-          <div>
-            <label htmlFor="year" className="block text-sm font-medium text-gray-700">Year</label>
-            <select
-              id="year"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            {/* Year */}
+            <div>
+              <label htmlFor="year" className="block text-sm font-semibold text-gray-700 mb-2">
+                Year
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'].map((y) => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => setYear(y)}
+                    className={`py-2 px-1 rounded-lg border-2 text-xs font-medium transition-all ${
+                      year === y
+                        ? 'border-purple-600 bg-purple-50 text-purple-900'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {y.slice(0, 4)}{y.length > 4 ? '.' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Major with autocomplete */}
+            <div className="relative">
+              <label htmlFor="major" className="block text-sm font-semibold text-gray-700 mb-2">
+                Major
+              </label>
+              <input
+                type="text"
+                id="major"
+                value={major}
+                onChange={(e) => setMajor(e.target.value)}
+                onFocus={() => setShowMajorSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowMajorSuggestions(false), 200)}
+                required
+                placeholder="Start typing..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+              {showMajorSuggestions && filteredMajors.length > 0 && major.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {filteredMajors.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setMajor(m);
+                        setShowMajorSuggestions(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-left hover:bg-purple-50 text-gray-700 hover:text-purple-900 text-sm"
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || uploadProgress}
+              className="w-full py-3 px-4 bg-purple-900 text-white rounded-xl font-semibold hover:bg-purple-800 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-2"
             >
-              <option value="">Select Year</option>
-              <option value="Freshman">Freshman</option>
-              <option value="Sophomore">Sophomore</option>
-              <option value="Junior">Junior</option>
-              <option value="Senior">Senior</option>
-              <option value="Graduate">Graduate</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="major" className="block text-sm font-medium text-gray-700">Major</label>
-            <input
-              type="text"
-              id="major"
-              value={major}
-              onChange={(e) => setMajor(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="photo" className="block text-sm font-medium text-gray-700">Profile Photo</label>
-            <input
-              type="file"
-              id="photo"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleFileChange}
-              disabled={uploadProgress}
-              className="mt-1 block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-md file:border-0
-                file:text-sm file:font-semibold
-                file:bg-purple-50 file:text-purple-700
-                hover:file:bg-purple-100"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading || uploadProgress}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-          >
-            {uploadProgress ? 'Uploading photo...' : isLoading ? 'Updating...' : 'Update Profile'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="w-full flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium text-black border border-1 border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-          >
-            Back to Dashboard
-          </button>
+              {uploadProgress ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Uploading photo...
+                </>
+              ) : isLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
+          </form>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }
