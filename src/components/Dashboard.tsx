@@ -47,9 +47,10 @@ export default function Dashboard() {
   const [success, setSuccess] = useState('');
   const [checkingOffer, setCheckingOffer] = useState<boolean>(false);
   const [alreadyOffered, setAlreadyOffered] = useState<boolean>(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'mine'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'mine' | 'offer'>('all');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [userOffers, setUserOffers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const checkOffer = async () => {
@@ -118,13 +119,28 @@ export default function Dashboard() {
       try {
         const result = await getAllRequests();
         setRequests(result);
+        
+        // Build set of requests where user has offered help
+        if (currentUser) {
+          const offersSet = new Set<string>();
+          for (const request of result) {
+            const offer = await getOfferByRequestAndHelper(
+              request.requestID,
+              currentUser.uid
+            );
+            if (offer) {
+              offersSet.add(request.requestID);
+            }
+          }
+          setUserOffers(offersSet);
+        }
       } catch (err) {
         console.error(err);
       }
     };
 
     getAll();
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     handleRefreshRequests();
@@ -181,6 +197,10 @@ export default function Dashboard() {
       if (activeFilter === 'mine' && request.creatorID !== currentUser?.uid) {
         return false;
       }
+      // Filter by offers user has made
+      if (activeFilter === 'offer' && !userOffers.has(request.requestID)) {
+        return false;
+      }
       // Filter by category
       if (activeCategory !== 'all') {
         const requestCategory = (request as Request & { category?: string }).category || 'other';
@@ -190,7 +210,7 @@ export default function Dashboard() {
       }
       return true;
     });
-  }, [requests, activeFilter, activeCategory, currentUser?.uid]);
+  }, [requests, activeFilter, activeCategory, currentUser?.uid, userOffers]);
 
   // Helper function for relative time
   const getRelativeTime = (timestamp: number) => {
@@ -214,9 +234,6 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold text-gray-900">
           Welcome back, {currentUser?.displayName?.split(' ')[0]}!
         </h2>
-        <p className="text-gray-600 mt-1">
-          {currentUser?.year} · {currentUser?.major}
-        </p>
       </div>
 
       {/* Alerts */}
@@ -270,6 +287,16 @@ export default function Dashboard() {
             }`}
           >
             My Requests
+          </button>
+          <button
+            onClick={() => setActiveFilter('offer')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              activeFilter === 'offer'
+                ? 'bg-white text-purple-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Offers Sent
           </button>
         </div>
       </div>
@@ -440,12 +467,6 @@ export default function Dashboard() {
                   </p>
                   <p className="text-gray-600 text-sm">
                     {selectedRequest.creatorYear} · {selectedRequest.creatorMajor}
-                  </p>
-                  <p className="text-gray-600 text-sm flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    {selectedRequest.creatorEmail}
                   </p>
                   <p className="text-gray-500 text-sm flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
