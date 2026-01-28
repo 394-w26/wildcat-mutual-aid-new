@@ -178,7 +178,7 @@ export default function Layout({ children, unreadCount = 0, onCreateRequest }: L
           <div className="flex justify-around py-2">
             <button
               onClick={() => navigate('/dashboard')}
-              className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors ${
+              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
                 isActive('/dashboard') ? 'text-purple-900' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -191,7 +191,7 @@ export default function Layout({ children, unreadCount = 0, onCreateRequest }: L
 
             <button
               onClick={() => navigate('/notifications')}
-              className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors relative ${
+              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors relative ${
                 isActive('/notifications') ? 'text-purple-900' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -205,13 +205,26 @@ export default function Layout({ children, unreadCount = 0, onCreateRequest }: L
                   </span>
                 )}
               </div>
-              <span className={`text-xs mt-1 font-medium ${isActive('/notifications') ? 'text-purple-900' : ''}`}>Notifications</span>
+              <span className={`text-xs mt-1 font-medium ${isActive('/notifications') ? 'text-purple-900' : ''}`}>Inbox</span>
               {isActive('/notifications') && <div className="w-1 h-1 bg-purple-900 rounded-full mt-1" />}
             </button>
 
             <button
+              onClick={() => navigate('/history')}
+              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
+                isActive('/history') ? 'text-purple-900' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className={`text-xs mt-1 font-medium ${isActive('/history') ? 'text-purple-900' : ''}`}>History</span>
+              {isActive('/history') && <div className="w-1 h-1 bg-purple-900 rounded-full mt-1" />}
+            </button>
+
+            <button
               onClick={() => navigate('/profile-settings')}
-              className={`flex flex-col items-center py-2 px-4 rounded-lg transition-colors ${
+              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
                 isActive('/profile-settings') ? 'text-purple-900' : 'text-gray-500 hover:text-gray-700'
               }`}
             >

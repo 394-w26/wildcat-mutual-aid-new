@@ -251,3 +251,60 @@ export const getPendingNotifications = async (creatorID: string): Promise<Array<
 
   return pendingOffers.sort((a, b) => b.createdAt - a.createdAt);
 };
+
+// ============ History (accepted connections) ============
+
+// Get requests where the user received accepted offers (user was the requester)
+export const getAcceptedOffersForMyRequests = async (creatorID: string): Promise<Array<Offer & { request: Request }>> => {
+  const requests = await getRequestsByCreator(creatorID);
+  const acceptedOffers: Array<Offer & { request: Request }> = [];
+
+  for (const request of requests) {
+    const offers = await getOffersByRequest(request.requestID);
+    const accepted = offers.filter((o) => o.status === 'accepted');
+    
+    for (const offer of accepted) {
+      acceptedOffers.push({
+        ...offer,
+        request,
+      });
+    }
+  }
+
+  return acceptedOffers.sort((a, b) => b.createdAt - a.createdAt);
+};
+
+// Get requests where the user's offer was accepted (user was the helper)
+export const getMyAcceptedOffers = async (helperID: string): Promise<Array<Offer & { request: Request }>> => {
+  // Get all requests (including closed ones for history)
+  const q = query(
+    collection(db, 'requests'),
+    orderBy('createdAt', 'desc')
+  );
+  const querySnapshot = await getDocs(q);
+  const allRequests = querySnapshot.docs.map((doc) => ({
+    ...doc.data(),
+    requestID: doc.id,
+  } as Request));
+
+  const myAcceptedOffers: Array<Offer & { request: Request }> = [];
+
+  for (const request of allRequests) {
+    const offersQuery = query(
+      collection(db, 'requests', request.requestID, 'offers'),
+      where('helperID', '==', helperID),
+      where('status', '==', 'accepted')
+    );
+    const offersSnapshot = await getDocs(offersQuery);
+    
+    for (const offerDoc of offersSnapshot.docs) {
+      myAcceptedOffers.push({
+        ...offerDoc.data() as Offer,
+        offerID: offerDoc.id,
+        request,
+      });
+    }
+  }
+
+  return myAcceptedOffers.sort((a, b) => b.createdAt - a.createdAt);
+};

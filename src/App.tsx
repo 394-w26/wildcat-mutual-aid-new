@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import CreateProfile from './components/CreateProfile';
 import ProfileSettings from './components/ProfileSettings';
 import NotificationsPage from './components/NotificationsPage';
+import HistoryPage from './components/HistoryPage';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile-settings" element={<ProfileSettings />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/history" element={<HistoryPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
