@@ -51,12 +51,9 @@ export default function CreateProfile() {
     }
   }, [currentUser, navigate]);
 
-  // Pre-fill name and photo from Google account
+  // Pre-fill photo from Google account
   useEffect(() => {
     if (currentUser) {
-      if (currentUser.displayName && !name) {
-        setName(currentUser.displayName);
-      }
       if (currentUser.photoURL && !photoURL) {
         setPhotoURL(currentUser.photoURL);
       }
