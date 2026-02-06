@@ -53,12 +53,10 @@ export default function CreateProfile() {
 
   // Pre-fill photo from Google account
   useEffect(() => {
-    if (currentUser) {
-      if (currentUser.photoURL && !photoURL) {
-        setPhotoURL(currentUser.photoURL);
-      }
+    if (currentUser?.photoURL) {
+      setPhotoURL(currentUser.photoURL);
     }
-  }, [currentUser, name, photoURL]);
+  }, [currentUser, name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

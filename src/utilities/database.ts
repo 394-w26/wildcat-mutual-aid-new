@@ -13,7 +13,8 @@ export const createRequest = async (
   creatorName: string,
   creatorYear: string,
   creatorMajor: string,
-  category: string = 'other'
+  category: string = 'other',
+  creatorPhotoURL: string,
 ): Promise<Request> => {
   const request: Omit<Request, 'requestID'> & { category: string } = {
     title,
@@ -26,6 +27,7 @@ export const createRequest = async (
     creatorYear,
     creatorMajor,
     category,
+    creatorPhotoURL,
   };
   
   const docRef = await addDoc(collection(db, 'requests'), request);

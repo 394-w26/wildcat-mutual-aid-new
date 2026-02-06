@@ -428,17 +428,13 @@ export default function Dashboard() {
 
               {/* Requester Info Card */}
               <div className="bg-gray-50 rounded-xl p-5 mb-6">
-                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Posted by
+                <h4 className="font-semibold text-gray-900 text-xl mb-4 flex items-center gap-2">
+                  <img className="w-10 h-10 rounded-full border-2 border-purple-600" src={selectedRequest.creatorPhotoURL || '/default-profile.png'} alt="User Icon" />
+                {selectedRequest.creatorName}
                 </h4>
                 <div className="space-y-2">
-                  <p className="text-gray-700">
-                    <span className="font-medium">{selectedRequest.creatorName}</span>
-                  </p>
-                  <p className="text-gray-600 text-sm">
+                  
+                  <p className="text-gray-600 text-md">
                     {selectedRequest.creatorYear} · {selectedRequest.creatorMajor}
                   </p>
                   <p className="text-gray-500 text-sm flex items-center gap-2">

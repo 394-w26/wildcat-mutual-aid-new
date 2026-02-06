@@ -56,6 +56,7 @@ export const requestSchema = z.object({
   creatorName: z.string(),
   creatorYear: z.string(),
   creatorMajor: z.string(),
+  creatorPhotoURL: z.string(),
 });
 
 export type Request = z.infer<typeof requestSchema>;

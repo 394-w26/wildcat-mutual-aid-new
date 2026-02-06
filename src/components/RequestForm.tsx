@@ -51,7 +51,8 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
         currentUser.displayName,
         currentUser.year,
         currentUser.major,
-        category
+        category,
+        currentUser.photoURL || '',
       );
 
       onSuccess();
