@@ -80,6 +80,14 @@ export const updateRequestStatus = async (requestID: string, status: 'open' | 'a
   await updateDoc(doc(collection(db, 'requests'), requestID), { status });
 };
 
+export const updateRequest = async (
+  requestID: string,
+  data: { title?: string; description?: string; category?: string }
+): Promise<void> => {
+  const docRef = doc(collection(db, 'requests'), requestID);
+  await updateDoc(docRef, data);
+};
+
 
 export async function checkUserProfile(uid: string): Promise<boolean> {
   

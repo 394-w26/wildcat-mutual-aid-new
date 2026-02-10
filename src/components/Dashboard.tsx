@@ -7,6 +7,7 @@ import {
   getOfferByRequestAndHelper,
   getPendingNotifications,
   updateRequestStatus,
+  updateRequest,
 } from '../utilities/database';
 import type { Request, Notification } from '../types/index';
 import RequestForm from './RequestForm';
@@ -50,6 +51,11 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'mine'>('all');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategory, setEditCategory] = useState('other');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   useEffect(() => {
     const checkOffer = async () => {
@@ -489,6 +495,111 @@ export default function Dashboard() {
 
               {currentUser?.uid === selectedRequest.creatorID && (
                 <>
+                  {!isEditing && (
+                    <button
+                      onClick={() => {
+                        setEditTitle(selectedRequest.title);
+                        setEditDescription(selectedRequest.description);
+                        setEditCategory(((selectedRequest as Request & { category?: string }).category) || 'other');
+                        setIsEditing(true);
+                      }}
+                      className="w-full bg-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-indigo-700 transition-colors mb-3"
+                    >
+                      Edit Request
+                    </button>
+                  )}
+
+                  {isEditing && (
+                    <div className="space-y-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {CATEGORIES.filter(c => c.id !== 'all').map((cat) => (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setEditCategory(cat.id)}
+                              className={`p-3 rounded-xl border-2 text-left transition-all ${
+                                editCategory === cat.id
+                                  ? 'border-purple-600 bg-purple-50'
+                                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                              }`}
+                            >
+                              <span className="text-2xl">{cat.icon}</span>
+                              <p className={`text-sm font-medium mt-1 ${
+                                editCategory === cat.id ? 'text-purple-900' : 'text-gray-900'
+                              }`}>
+                                {cat.label}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+                        <input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value.slice(0, 100))}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                        <textarea
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value.slice(0, 500))}
+                          rows={4}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditTitle('');
+                            setEditDescription('');
+                            setEditCategory('other');
+                          }}
+                          className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!selectedRequest) return;
+                            if (!editTitle.trim()) {
+                              setError('Title cannot be empty');
+                              return;
+                            }
+                            setIsSavingEdit(true);
+                            try {
+                              await updateRequest(selectedRequest.requestID, {
+                                title: editTitle.trim(),
+                                description: editDescription.trim(),
+                                category: editCategory,
+                              });
+                              setSuccess('Request updated');
+                              setTimeout(() => setSuccess(''), 4000);
+                              await handleRefreshRequests();
+                              setSelectedRequest((prev) => prev ? ({ ...prev, title: editTitle.trim(), description: editDescription.trim(), category: editCategory } as Request) : prev);
+                              setIsEditing(false);
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : 'Failed to update request');
+                            } finally {
+                              setIsSavingEdit(false);
+                            }
+                          }}
+                          disabled={isSavingEdit}
+                          className="flex-1 py-3 px-4 bg-purple-900 text-white rounded-xl font-semibold hover:bg-purple-800 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-2"
+                        >
+                          {isSavingEdit ? 'Saving...' : 'Save Changes'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {selectedRequest.status === 'open' && !showCloseConfirm && (
                     <button
                       onClick={() => setShowCloseConfirm(true)}
